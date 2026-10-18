@@ -47,7 +47,7 @@ const LanguageSwitcher = () => {
       </button>
       {open && (
         <ul
-          className="absolute end-0 top-full mt-2 min-w-40 rounded-lg border border-white/10 bg-dark-light shadow-xl overflow-hidden z-50"
+          className="absolute end-0 top-full mt-2 min-w-40 max-w-[calc(100vw-1rem)] rounded-lg border border-white/10 bg-dark-light shadow-xl overflow-hidden z-50"
           role="listbox"
         >
           {LANGUAGES.map((lang) => (

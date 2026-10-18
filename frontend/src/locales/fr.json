@@ -250,7 +250,8 @@
       "bookings": "Réservations",
       "users": "Utilisateurs",
       "calendar": "Calendrier",
-      "analytics": "Analytique"
+      "analytics": "Analytique",
+      "menu": "menu"
     },
     "roles": {
       "admin": "Administrateur",

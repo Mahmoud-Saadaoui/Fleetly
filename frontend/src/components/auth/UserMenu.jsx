@@ -20,7 +20,7 @@ const LANGUAGES = [
  * Account menu displayed in the header once the user is authenticated.
  * Clicking the user name opens a dropdown at the header edge with:
  * - the language switcher
- * - contextual links (my bookings, dashboard)
+ * - contextual links (my bookings, dashboard if staff)
  * - logout
  */
 const UserMenu = () => {
@@ -83,7 +83,7 @@ const UserMenu = () => {
 
       {open && (
         <div
-          className="absolute end-0 top-full mt-3 w-64 rounded-xl border border-white/10 bg-dark-light shadow-xl overflow-hidden z-50"
+          className="absolute end-0 top-full mt-3 w-64 max-w-[calc(100vw-1rem)] rounded-xl border border-white/10 bg-dark-light shadow-xl overflow-hidden z-50"
           role="menu"
         >
           {/* User identity */}

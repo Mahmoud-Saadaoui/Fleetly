@@ -250,7 +250,8 @@
       "bookings": "الحجوزات",
       "users": "المستخدمون",
       "calendar": "التقويم",
-      "analytics": "التحليلات"
+      "analytics": "التحليلات",
+      "menu": "القائمة"
     },
     "roles": {
       "admin": "مسؤول",

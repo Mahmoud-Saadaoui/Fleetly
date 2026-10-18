@@ -122,8 +122,8 @@ const UsersList = () => {
         />
       </div>
 
-      <div className="bg-dark-light/50 border border-white/10 rounded-xl overflow-hidden">
-        <table className="w-full">
+      <div className="bg-dark-light/50 border border-white/10 rounded-xl overflow-x-auto">
+        <table className="w-full min-w-[640px]">
           <thead>
             <tr className="border-b border-white/10">
               <th className="text-left text-xs text-gray-400 p-4">{t("admin.common.name")}</th>

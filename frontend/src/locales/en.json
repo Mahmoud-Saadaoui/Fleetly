@@ -250,7 +250,8 @@
       "bookings": "Bookings",
       "users": "Users",
       "calendar": "Calendar",
-      "analytics": "Analytics"
+      "analytics": "Analytics",
+      "menu": "menu"
     },
     "roles": {
       "admin": "Administrator",

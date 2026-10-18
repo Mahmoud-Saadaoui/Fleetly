@@ -102,7 +102,8 @@ const AvailabilityCalendar = ({ bookedRanges = [], startDate, endDate, onSelect 
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1" onMouseLeave={() => setHoverDay(null)}>
+      <div className="overflow-x-auto">
+        <div className="grid grid-cols-7 gap-1 min-w-[320px]" onMouseLeave={() => setHoverDay(null)}>
         {days.map((day) => {
           const bookedDay = isDayBooked(day, bookedDays);
           const past = isBefore(day, today);
@@ -146,6 +147,7 @@ const AvailabilityCalendar = ({ bookedRanges = [], startDate, endDate, onSelect 
           <span className="h-3 w-3 rounded bg-white/10" aria-hidden="true" />
           {t("vehicleDetail.legendBooked")}
         </span>
+        </div>
       </div>
     </div>
   );
