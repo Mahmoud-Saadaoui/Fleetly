@@ -13,7 +13,7 @@ const {
 router.patch(
   '/:id',
   auth.check,
-  authorize('admin', 'fleet_manager'),
+  authorize('admin', 'agency_manager'),
   vehicleRules.update,
   validate,
   updateVehicle
@@ -23,7 +23,7 @@ router.patch(
 router.delete(
   '/:id',
   auth.check,
-  authorize('admin', 'fleet_manager'),
+  authorize('admin', 'agency_manager'),
   deleteVehicle
 );
 

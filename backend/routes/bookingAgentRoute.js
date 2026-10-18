@@ -8,7 +8,7 @@ const { getAgentBookings } = require('../controllers/bookingAgentController');
 router.get(
   '/',
   auth.check,
-  authorize('agent', 'admin', 'fleet_manager'),
+  authorize('agency_manager', 'admin'),
   getAgentBookings
 );
 

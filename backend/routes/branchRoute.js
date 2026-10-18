@@ -21,7 +21,7 @@ router.get('/:id', getBranchById);
 router.post(
   '/',
   auth.check,
-  authorize('admin', 'fleet_manager'),
+  authorize('admin', 'agency_manager'),
   branchRules.create,
   validate,
   createBranch
@@ -30,7 +30,7 @@ router.post(
 router.patch(
   '/:id',
   auth.check,
-  authorize('admin', 'fleet_manager'),
+  authorize('admin', 'agency_manager'),
   branchRules.update,
   validate,
   updateBranch

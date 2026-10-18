@@ -4,7 +4,7 @@ const auth = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { getOverview, getProfitability } = require('../controllers/analyticsController');
 
-router.use(auth.check, authorize('admin', 'fleet_manager', 'finance_manager'));
+router.use(auth.check, authorize('admin'));
 router.get('/overview', getOverview);
 router.get('/profitability', getProfitability);
 

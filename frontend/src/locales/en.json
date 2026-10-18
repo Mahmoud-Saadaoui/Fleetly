@@ -254,11 +254,8 @@
     },
     "roles": {
       "admin": "Administrator",
-      "fleet_manager": "Fleet manager",
-      "agent": "Agent",
-      "finance_manager": "Finance manager",
-      "support": "Support",
-      "customer": "Customer"
+      "agency_manager": "Agency manager",
+      "user": "User"
     },
     "actions": {
       "add": "Add",

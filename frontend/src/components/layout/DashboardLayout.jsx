@@ -14,13 +14,13 @@ import {
 } from "react-icons/fa";
 
 const SIDEBAR_ITEMS = [
-  { to: "/admin", labelKey: "admin.nav.dashboard", icon: FaHome, roles: ["admin", "fleet_manager", "agent", "finance_manager"] },
-  { to: "/admin/vehicles", labelKey: "admin.nav.vehicles", icon: FaCar, roles: ["admin", "fleet_manager"] },
-  { to: "/admin/branches", labelKey: "admin.nav.branches", icon: FaBuilding, roles: ["admin", "fleet_manager"] },
-  { to: "/admin/bookings", labelKey: "admin.nav.bookings", icon: FaClipboardList, roles: ["admin", "fleet_manager", "agent"] },
+  { to: "/admin", labelKey: "admin.nav.dashboard", icon: FaHome, roles: ["admin","agency_manager"] },
+  { to: "/admin/vehicles", labelKey: "admin.nav.vehicles", icon: FaCar, roles: ["admin","agency_manager"] },
+  { to: "/admin/branches", labelKey: "admin.nav.branches", icon: FaBuilding, roles: ["admin","agency_manager"] },
+  { to: "/admin/bookings", labelKey: "admin.nav.bookings", icon: FaClipboardList, roles: ["admin","agency_manager"] },
   { to: "/admin/users", labelKey: "admin.nav.users", icon: FaUsers, roles: ["admin"] },
-  { to: "/admin/calendar", labelKey: "admin.nav.calendar", icon: FaCalendarAlt, roles: ["admin", "fleet_manager", "agent"] },
-  { to: "/admin/analytics", labelKey: "admin.nav.analytics", icon: FaChartBar, roles: ["admin", "fleet_manager", "finance_manager"] },
+  { to: "/admin/calendar", labelKey: "admin.nav.calendar", icon: FaCalendarAlt, roles: ["admin","agency_manager"] },
+  { to: "/admin/analytics", labelKey: "admin.nav.analytics", icon: FaChartBar, roles: ["admin"] },
 ];
 
 const DashboardLayout = () => {

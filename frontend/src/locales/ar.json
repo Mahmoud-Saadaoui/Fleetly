@@ -254,11 +254,8 @@
     },
     "roles": {
       "admin": "مسؤول",
-      "fleet_manager": "مدير الأسطول",
-      "agent": "وكيل",
-      "finance_manager": "المدير المالي",
-      "support": "الدعم",
-      "customer": "عميل"
+      "agency_manager": "مسؤول وكالة",
+      "user": "مستخدم"
     },
     "actions": {
       "add": "إضافة",

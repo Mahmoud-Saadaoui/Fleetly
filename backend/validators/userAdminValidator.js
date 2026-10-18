@@ -7,7 +7,7 @@ const userAdminRules = {
   update: [
     body('role')
       .optional()
-      .isIn(['customer', 'agent', 'fleet_manager', 'finance_manager', 'support', 'admin'])
+      .isIn(['user', 'agency_manager', 'admin'])
       .withMessage('Invalid role'),
     body('branchIds')
       .optional()
@@ -31,7 +31,7 @@ const userAdminRules = {
       .normalizeEmail(),
     body('role')
       .optional()
-      .isIn(['customer', 'agent', 'fleet_manager', 'finance_manager', 'support', 'admin'])
+      .isIn(['user', 'agency_manager', 'admin'])
       .withMessage('Invalid role'),
     body('branchIds')
       .optional()

@@ -5,7 +5,7 @@ import { usersAdminAPI } from "../../api/endpoints";
 import { getApiErrorMessage } from "../../utils/apiError";
 import toast from "react-hot-toast";
 
-const ROLE_OPTIONS = ["admin", "fleet_manager", "agent", "finance_manager", "support", "customer"];
+const ROLE_OPTIONS = ["admin", "agency_manager", "user"];
 
 const UsersList = () => {
   const { t } = useTranslation();

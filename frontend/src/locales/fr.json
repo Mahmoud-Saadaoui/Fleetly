@@ -254,11 +254,8 @@
     },
     "roles": {
       "admin": "Administrateur",
-      "fleet_manager": "Gestionnaire de flotte",
-      "agent": "Agent",
-      "finance_manager": "Responsable financier",
-      "support": "Support",
-      "customer": "Client"
+      "agency_manager": "Responsable d'agence",
+      "user": "Utilisateur"
     },
     "actions": {
       "add": "Ajouter",

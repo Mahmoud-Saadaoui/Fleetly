@@ -8,7 +8,7 @@ const authorize = (...allowedRoles) => async (req, res, next) => {
     if (!user) return forbiddenResponse(res, 'User not found');
 
     // isAdmin is kept during migration so existing administrators are not locked out.
-    const role = user.isAdmin ? 'admin' : (user.role || 'customer');
+    const role = user.isAdmin ? 'admin' : (user.role || 'user');
     req.currentUser = { ...user, role };
 
     if (!allowedRoles.includes(role)) {

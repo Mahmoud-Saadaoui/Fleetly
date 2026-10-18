@@ -16,7 +16,7 @@ const {
 router.get(
   '/',
   auth.check,
-  authorize('admin', 'fleet_manager'),
+  authorize('admin', 'agency_manager'),
   listUsers
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.get(
   '/:id',
   auth.check,
-  authorize('admin', 'fleet_manager'),
+  authorize('admin', 'agency_manager'),
   getUserById
 );
 
@@ -50,7 +50,7 @@ router.delete(
 router.post(
   '/invite',
   auth.check,
-  authorize('admin', 'fleet_manager'),
+  authorize('admin', 'agency_manager'),
   userAdminRules.invite,
   validate,
   inviteUser

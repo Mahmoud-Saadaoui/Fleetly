@@ -10,7 +10,7 @@ router.get('/', getVehicles);
 router.get('/:id/availability', getVehicleAvailability);
 router.get('/:id', getVehicleById);
 
-router.post('/', auth.check, authorize('admin', 'fleet_manager'), createVehicle);
-router.patch('/:id/status', auth.check, authorize('admin', 'fleet_manager', 'agent'), updateVehicleStatus);
+router.post('/', auth.check, authorize('admin', 'agency_manager'), createVehicle);
+router.patch('/:id/status', auth.check, authorize('admin', 'agency_manager'), updateVehicleStatus);
 
 module.exports = router;
