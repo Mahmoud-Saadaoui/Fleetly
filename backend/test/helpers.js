@@ -36,7 +36,7 @@ function makeUser(overrides = {}) {
     _id: '507f1f77bcf86cd799439011',
     name: 'Test User',
     email: 'test@example.com',
-    role: 'customer',
+    role: 'user',
     branchIds: [],
     isActive: true,
     ...overrides

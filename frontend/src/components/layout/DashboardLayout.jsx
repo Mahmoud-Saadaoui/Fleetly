@@ -27,7 +27,7 @@ const DashboardLayout = () => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const location = useLocation();
-  const userRole = user?.role || (user?.isAdmin ? "admin" : "customer");
+  const userRole = user?.role || (user?.isAdmin ? "admin" : "user");
 
   const filteredItems = SIDEBAR_ITEMS.filter((item) => item.roles.includes(userRole));
 

@@ -11,11 +11,11 @@ const { makeUser, makeBranch } = require('./helpers');
  * - branchIds are correctly managed
  */
 
-test('makeUser - default fixture (customer)', () => {
+test('makeUser - default fixture (user)', () => {
   const user = makeUser();
   assert.equal(user.name, 'Test User');
   assert.equal(user.email, 'test@example.com');
-  assert.equal(user.role, 'customer');
+  assert.equal(user.role, 'user');
   assert.equal(user.isActive, true);
   assert.deepEqual(user.branchIds, []);
 });
@@ -25,28 +25,28 @@ test('makeUser - with admin role', () => {
   assert.equal(user.role, 'admin');
 });
 
-test('makeUser - with agent role and branches', () => {
+test('makeUser - with agency_manager role and branches', () => {
   const user = makeUser({
-    role: 'agent',
+    role: 'agency_manager',
     branchIds: ['66f1a2b3c4d5e6f7a8b9c0d1']
   });
-  assert.equal(user.role, 'agent');
+  assert.equal(user.role, 'agency_manager');
   assert.equal(user.branchIds.length, 1);
 });
 
-test('makeUser - with fleet_manager role', () => {
-  const user = makeUser({ role: 'fleet_manager' });
-  assert.equal(user.role, 'fleet_manager');
+test('makeUser - with agency_manager role', () => {
+  const user = makeUser({ role: 'agency_manager' });
+  assert.equal(user.role, 'agency_manager');
 });
 
-test('makeUser - with finance_manager role', () => {
-  const user = makeUser({ role: 'finance_manager' });
-  assert.equal(user.role, 'finance_manager');
+test('makeUser - with agency_manager role', () => {
+  const user = makeUser({ role: 'agency_manager' });
+  assert.equal(user.role, 'agency_manager');
 });
 
-test('makeUser - with support role', () => {
-  const user = makeUser({ role: 'support' });
-  assert.equal(user.role, 'support');
+test('makeUser - with agency_manager role', () => {
+  const user = makeUser({ role: 'agency_manager' });
+  assert.equal(user.role, 'agency_manager');
 });
 
 test('makeUser - inactive (soft delete)', () => {
@@ -56,7 +56,7 @@ test('makeUser - inactive (soft delete)', () => {
 
 test('makeUser - with multiple branches', () => {
   const user = makeUser({
-    role: 'fleet_manager',
+    role: 'agency_manager',
     branchIds: [
       '66f1a2b3c4d5e6f7a8b9c0d1',
       '66f1a2b3c4d5e6f7a8b9c0d2'

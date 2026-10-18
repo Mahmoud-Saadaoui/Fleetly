@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
-import RoleGuard from "./auth/RoleGuard";
 import LanguageSwitcher from "./common/LanguageSwitcher";
 import UserMenu from "./auth/UserMenu";
 
@@ -27,11 +26,7 @@ const Header = () => {
               {t("nav.myBookings")}
             </Link>
           )}
-          <RoleGuard roles={['admin', 'fleet_manager', 'agent', 'finance_manager']}>
-            <Link to="/admin" className="text-sm font-cairo text-gray-300 hover:text-white transition-colors">
-              {t("nav.dashboard")}
-            </Link>
-          </RoleGuard>
+
         </nav>
         <div className="flex items-center gap-3">
           {isAuthenticated ? (

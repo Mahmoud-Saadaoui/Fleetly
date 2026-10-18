@@ -3,6 +3,16 @@ require('dotenv').config();
 
 const User = require('../models/user');
 
+/**
+ * Migration des rôles vers le modèle simplifié : user / agency_manager / admin.
+ *
+ * Mapping :
+ *   agent, fleet_manager -> agency_manager
+ *   finance_manager, support, customer -> user
+ *   user, admin inchangés
+ *
+ * Usage : MONGODB_URI=mongodb://... node scripts/migrate-roles.js
+ */
 async function migrate() {
   const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
   if (!uri) {
@@ -13,9 +23,16 @@ async function migrate() {
     await mongoose.connect(uri);
     console.log('Connected');
 
-    const r1 = await User.updateMany({ role: { $in: ['agent', 'fleet_manager'] } }, { $set: { role: 'agency_manager' } });
+    const r1 = await User.updateMany(
+      { role: { $in: ['agent', 'fleet_manager'] } },
+      { $set: { role: 'agency_manager' } }
+    );
     console.log('agent/fleet_manager -> agency_manager:', r1.modifiedCount);
-    const r2 = await User.updateMany({ role: { $in: ['finance_manager', 'support', 'customer'] } }, { $set: { role: 'user' } });
+
+    const r2 = await User.updateMany(
+      { role: { $in: ['finance_manager', 'support', 'customer'] } },
+      { $set: { role: 'user' } }
+    );
     console.log('finance_manager/support/customer -> user:', r2.modifiedCount);
 
     await mongoose.connection.close();

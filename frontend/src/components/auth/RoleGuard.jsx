@@ -5,7 +5,7 @@ const RoleGuard = ({ children, roles = [], fallback = null }) => {
 
   if (!user) return fallback;
 
-  const userRole = user.role || (user.isAdmin ? 'admin' : 'customer');
+  const userRole = user.role || (user.isAdmin ? 'admin' : 'user');
   if (roles.length > 0 && !roles.includes(userRole)) {
     return fallback;
   }

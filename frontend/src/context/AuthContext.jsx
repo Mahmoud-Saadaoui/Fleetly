@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = user?.role === 'admin' || user?.isAdmin;
   const isFleetManager = user?.role === 'fleet_manager';
   const isAgent = user?.role === 'agent';
-  const isStaff = isAdmin || isFleetManager || isAgent || user?.role === 'finance_manager' || user?.role === 'support';
+  const isStaff = isAdmin || user?.role === 'agency_manager';
 
   return (
     <AuthContext.Provider
