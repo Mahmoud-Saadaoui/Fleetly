@@ -43,9 +43,9 @@ test('makeUser - email used as matching key', () => {
 });
 
 test('makeUser - default role for social auth', () => {
-  // Users created via social auth have 'customer' role
-  const user = makeUser({ role: 'customer' });
-  assert.equal(user.role, 'customer');
+  // Users created via social auth have 'user' role
+  const user = makeUser({ role: 'user' });
+  assert.equal(user.role, 'user');
 });
 
 test('makeUser - social auth with branches', () => {
