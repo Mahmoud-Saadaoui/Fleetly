@@ -59,10 +59,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const getMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.userId)
-    .select('name email isAdmin role branchIds')
+    .select('name email isAdmin role branchIds isActive')
     .lean();
 
-  if (!user) {
+  if (!user || user.isActive === false) {
     return notFoundResponse(res, 'User');
   }
 

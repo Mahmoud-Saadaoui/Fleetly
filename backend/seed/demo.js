@@ -63,7 +63,7 @@ const seed = async () => {
       name: 'Fleet Manager',
       email: 'fleet@demo.com',
       password: adminPassword,
-      role: 'fleet_manager',
+      role: 'agency_manager',
       branchIds: [branches[0]._id],
       isActive: true,
     });
@@ -73,7 +73,7 @@ const seed = async () => {
       name: 'Jean Dupont',
       email: 'client@demo.com',
       password: adminPassword,
-      role: 'customer',
+      role: 'user',
       isActive: true,
     });
     console.log('Users created');

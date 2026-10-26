@@ -6,8 +6,24 @@ const { validateEnv } = require('../config/validateEnv');
 process.env.JWT_SECRET = 'test-secret-with-at-least-32-characters';
 process.env.JWT_EXPIRES_IN = '1h';
 
+const mongoose = require('mongoose');
+const User = require('../models/user');
 const auth = require('../middlewares/auth');
 const { requestId } = require('../middlewares/requestId');
+
+// Mock User.findById for tests
+const originalFindById = User.findById;
+User.findById = function () {
+  return {
+    select: function () {
+      return {
+        lean: async function () {
+          return { isActive: true };
+        }
+      };
+    }
+  };
+};
 
 const createResponse = () => ({
   statusCode: null,
@@ -38,7 +54,7 @@ test('rejects malformed authorization headers', () => {
   assert.equal(response.body.message, 'Unauthorized');
 });
 
-test('accepts a valid Bearer token with an ObjectId subject', () => {
+test('accepts a valid Bearer token with an ObjectId subject', async () => {
   const token = jwt.sign(
     { sub: '507f1f77bcf86cd799439011' },
     process.env.JWT_SECRET,
@@ -50,7 +66,7 @@ test('accepts a valid Bearer token with an ObjectId subject', () => {
   const response = createResponse();
   let nextCalled = false;
 
-  auth.check(request, response, () => {
+  await auth.check(request, response, () => {
     nextCalled = true;
   });
 
