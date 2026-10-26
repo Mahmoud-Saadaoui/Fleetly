@@ -78,12 +78,15 @@ const handleSocialCallback = (provider) => asyncHandler(async (req, res) => {
         email: profile.email,
         password: crypto.randomBytes(32).toString('hex'), // Random password (never used)
         role: 'user',
+        isActive: true,
         [socialIdField]: socialId
       });
     } else if (!user[socialIdField]) {
       // User exists: link the social ID if missing
       user[socialIdField] = socialId;
       await user.save();
+    } else if (user[socialIdField] !== socialId) {
+      return redirectToClient(res, { error: 'Account linked to a different social provider' });
     }
 
     // Block disabled accounts

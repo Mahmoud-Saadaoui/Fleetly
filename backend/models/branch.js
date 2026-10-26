@@ -34,7 +34,8 @@ const BranchSchema = new mongoose.Schema({
     country: { type: String, default: 'FR', trim: true, uppercase: true, maxlength: 2 }
   },
   phone: { type: String, trim: true, maxlength: 30 },
-  email: { type: String, trim: true, lowercase: true, maxlength: 100 }
+  email: { type: String, trim: true, lowercase: true, maxlength: 100 },
+  isActive: { type: Boolean, default: true, index: true }
 }, {
   timestamps: true
 });

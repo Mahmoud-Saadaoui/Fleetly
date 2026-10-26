@@ -47,6 +47,10 @@ const getBranches = asyncHandler(async (req, res) => {
   // Optional filter by city
   const filter = {};
   if (req.query.city) filter['address.city'] = new RegExp(req.query.city, 'i');
+  // Hide inactive branches for public/listing unless explicitly requested by staff
+  if (req.query.includeInactive !== 'true') {
+    filter.isActive = { $ne: false };
+  }
 
   const [branches, total] = await Promise.all([
     Branch.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),

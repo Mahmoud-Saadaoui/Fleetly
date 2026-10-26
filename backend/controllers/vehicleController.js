@@ -40,8 +40,12 @@ const getVehicles = asyncHandler(async (req, res) => {
   }
 
   // Fetch paginated vehicles + total in parallel
+  const vehiclesQuery = Vehicle.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit);
+  if (typeof vehiclesQuery.select === 'function') {
+    vehiclesQuery.select('-vin -registrationNumber');
+  }
   const [vehicles, total] = await Promise.all([
-    Vehicle.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    typeof vehiclesQuery.lean === 'function' ? vehiclesQuery.lean() : vehiclesQuery,
     Vehicle.countDocuments(filter)
   ]);
 

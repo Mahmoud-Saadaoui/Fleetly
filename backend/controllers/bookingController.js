@@ -21,6 +21,8 @@ const parseDates = (startAt, endAt) => {
   const start = new Date(startAt);
   const end = new Date(endAt);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return null;
+  const now = new Date();
+  if (start < new Date(now.getFullYear(), now.getMonth(), now.getDate())) return null;
   const rentalDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
   return { startAt: start, endAt: end, rentalDays };
 };
@@ -75,7 +77,26 @@ const createBooking = asyncHandler(async (req, res) => {
     const existing = await Booking.findOne({ customer: req.userId, idempotencyKey }).populate('vehicle');
     if (existing) return successResponse(res, existing, 'Booking already exists');
   }
-  const vehicle = await Vehicle.findOne({ _id: vehicleId, isDeleted: false, status: { $ne: 'retired' } });
+
+  const Branch = require('../models/branch');
+  if (pickupBranch) {
+    if (!mongoose.isValidObjectId(pickupBranch)) return badRequestResponse(res, 'Invalid pickup branch');
+    const pb = await Branch.findById(pickupBranch).select('isActive');
+    if (!pb) return badRequestResponse(res, 'Invalid pickup branch');
+    if (pb.isActive === false) return badRequestResponse(res, 'Pickup branch is not active');
+  }
+  if (returnBranch) {
+    if (!mongoose.isValidObjectId(returnBranch)) return badRequestResponse(res, 'Invalid return branch');
+    const rb = await Branch.findById(returnBranch).select('isActive');
+    if (!rb) return badRequestResponse(res, 'Invalid return branch');
+    if (rb.isActive === false) return badRequestResponse(res, 'Return branch is not active');
+  }
+
+  const vehicleQuery = Vehicle.findOne({ _id: vehicleId, isDeleted: false, status: { $ne: 'retired' } });
+  if (typeof vehicleQuery.populate === 'function') {
+    vehicleQuery.populate('branch');
+  }
+  const vehicle = typeof vehicleQuery.lean === 'function' ? await vehicleQuery.lean() : await vehicleQuery;
   if (!vehicle) return notFoundResponse(res, 'Vehicle');
   if (vehicle.status !== 'available') return conflictResponse(res, `Vehicle is ${statusText(vehicle.status)} and cannot be booked`);
   if (await findConflict(vehicleId, dates)) return conflictResponse(res, 'Vehicle is already booked for these dates');

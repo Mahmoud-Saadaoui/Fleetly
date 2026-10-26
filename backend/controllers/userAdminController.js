@@ -206,8 +206,7 @@ const inviteUser = asyncHandler(async (req, res) => {
     name: user.name,
     email: user.email,
     role: user.role,
-    branchIds: user.branchIds,
-    inviteToken // Remove once email is implemented
+    branchIds: user.branchIds
   }, 'User invited successfully');
 });
 
