@@ -80,8 +80,30 @@ const updateUser = asyncHandler(async (req, res) => {
     return notFoundResponse(res, 'User');
   }
 
-  // Validate branchIds if provided
-  if (branchIds) {
+  const actor = req.currentUser || {};
+  const actorRole = actor.isAdmin ? 'admin' : actor.role || 'user';
+
+  if (role !== undefined) {
+    if (role === 'admin' && actorRole !== 'admin') {
+      return forbiddenResponse(res, 'Insufficient permissions');
+    }
+    if (actorRole === 'agency_manager' && role !== 'user') {
+      return forbiddenResponse(res, 'Insufficient permissions');
+    }
+    user.role = role;
+  }
+
+  if (branchIds !== undefined) {
+    if (actorRole === 'agency_manager') {
+      if (!Array.isArray(branchIds) || branchIds.length === 0) {
+        return badRequestResponse(res, 'Agency manager can only assign to assigned branches');
+      }
+      const actorBranches = (actor.branchIds || []).map((id) => String(id));
+      const allAssigned = branchIds.every((id) => actorBranches.includes(String(id)));
+      if (!allAssigned) {
+        return forbiddenResponse(res, 'Cannot assign branches outside your scope');
+      }
+    }
     const validBranches = await Branch.find({ _id: { $in: branchIds } }).select('_id');
     if (validBranches.length !== branchIds.length) {
       return badRequestResponse(res, 'One or more branches are invalid');
@@ -89,7 +111,6 @@ const updateUser = asyncHandler(async (req, res) => {
     user.branchIds = branchIds;
   }
 
-  if (role !== undefined) user.role = role;
   if (isActive !== undefined) user.isActive = isActive;
 
   await user.save();
@@ -125,6 +146,25 @@ const deleteUser = asyncHandler(async (req, res) => {
  */
 const inviteUser = asyncHandler(async (req, res) => {
   const { name, email, role = 'user', branchIds = [] } = req.body;
+  const actor = req.currentUser || {};
+  const actorRole = actor.isAdmin ? 'admin' : actor.role || 'user';
+
+  if (role === 'admin' && actorRole !== 'admin') {
+    return forbiddenResponse(res, 'Insufficient permissions');
+  }
+  if (actorRole === 'agency_manager') {
+    if (role === 'admin') {
+      return forbiddenResponse(res, 'Insufficient permissions');
+    }
+    if (!Array.isArray(branchIds) || branchIds.length === 0) {
+      return badRequestResponse(res, 'Agency manager can only invite to assigned branches');
+    }
+    const actorBranches = (actor.branchIds || []).map((id) => String(id));
+    const allAssigned = branchIds.every((id) => actorBranches.includes(String(id)));
+    if (!allAssigned) {
+      return forbiddenResponse(res, 'Cannot assign branches outside your scope');
+    }
+  }
 
   // Check if email already exists
   const existingUser = await User.findOne({ email });

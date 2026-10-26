@@ -61,6 +61,12 @@ const updateVehicle = asyncHandler(async (req, res) => {
     if (!mongoose.isValidObjectId(branch)) {
       return badRequestResponse(res, 'Invalid branch ID');
     }
+    if (req.currentUser.role !== 'admin') {
+      const branchIds = req.currentUser.branchIds || [];
+      if (!branchIds.some((id) => String(id) === String(branch))) {
+        return badRequestResponse(res, 'Vehicle branch is outside your scope');
+      }
+    }
     const branchExists = await Branch.findById(branch);
     if (!branchExists) {
       return badRequestResponse(res, 'Invalid branch');

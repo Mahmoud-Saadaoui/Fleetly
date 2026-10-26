@@ -16,18 +16,21 @@ const getAgentBookings = asyncHandler(async (req, res) => {
 
   // Build base filter
   const filter = {};
+  const conditions = [];
 
-  // Filter by branch if user is an agent
+  // Filter by branch if user is an agency manager
   if (req.currentUser.role === 'agency_manager') {
     const branchIds = req.currentUser.branchIds || [];
     if (branchIds.length === 0) {
       // Agent with no branches: no bookings visible
       return paginatedResponse(res, [], getPaginationMeta(page, limit, 0), 'Bookings retrieved successfully');
     }
-    filter.$or = [
-      { pickupBranch: { $in: branchIds } },
-      { returnBranch: { $in: branchIds } }
-    ];
+    conditions.push({
+      $or: [
+        { pickupBranch: { $in: branchIds } },
+        { returnBranch: { $in: branchIds } }
+      ]
+    });
   }
 
   // Optional filters from query string
@@ -43,10 +46,13 @@ const getAgentBookings = asyncHandler(async (req, res) => {
     if (!mongoose.isValidObjectId(req.query.branchId)) {
       return badRequestResponse(res, 'Invalid branch ID');
     }
-    // If branchId is provided, it must match pickupBranch OR returnBranch
-    filter.$and = [
-      { $or: [{ pickupBranch: req.query.branchId }, { returnBranch: req.query.branchId }] }
-    ];
+    if (req.currentUser.role === 'agency_manager') {
+      const branchIds = req.currentUser.branchIds || [];
+      if (!branchIds.some((id) => String(id) === String(req.query.branchId))) {
+        return badRequestResponse(res, 'Branch outside your scope');
+      }
+    }
+    conditions.push({ $or: [{ pickupBranch: req.query.branchId }, { returnBranch: req.query.branchId }] });
   }
 
   if (req.query.dateFrom || req.query.dateTo) {
@@ -68,11 +74,20 @@ const getAgentBookings = asyncHandler(async (req, res) => {
   }
 
   if (req.query.search) {
-    const searchRegex = new RegExp(req.query.search, 'i');
-    // Search on customer name (via populate) or vehicle
-    // Note: this search is simplified, in production use aggregation
-    filter.$or = filter.$or || [];
-    filter.$or.push({ notes: searchRegex });
+    const searchTerm = String(req.query.search).trim();
+    if (searchTerm.length === 0) {
+      // ignore empty search
+    } else if (searchTerm.length > 60) {
+      return badRequestResponse(res, 'Search term too long');
+    } else {
+      const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escaped, 'i');
+      conditions.push({ notes: searchRegex });
+    }
+  }
+
+  if (conditions.length > 0) {
+    filter.$and = conditions;
   }
 
   // Fetch paginated bookings + total in parallel
