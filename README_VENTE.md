@@ -68,8 +68,8 @@ npm run dev   # Port 5173
 
 Après `npm run seed` dans le backend :
 - **Admin:** admin@demo.com / demo1234
-- **Gestionnaire flotte:** fleet@demo.com / demo1234  
-- **Client:** client@demo.com / demo1234
+- **Gestionnaire d'agence:** agency@demo.com / demo1234  
+- **Client:** user@demo.com / demo1234
 
 ## Déploiement
 

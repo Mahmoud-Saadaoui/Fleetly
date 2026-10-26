@@ -112,9 +112,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = user?.role === 'admin' || user?.isAdmin;
-  const isFleetManager = user?.role === 'fleet_manager';
-  const isAgent = user?.role === 'agent';
-  const isStaff = isAdmin || user?.role === 'agency_manager';
+  const isAgencyManager = user?.role === 'agency_manager';
+  const isStaff = isAdmin || isAgencyManager;
 
   return (
     <AuthContext.Provider
@@ -128,8 +127,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         isAuthenticated: !!token && !!user,
         isAdmin,
-        isFleetManager,
-        isAgent,
+        isAgencyManager,
         isStaff,
       }}
     >

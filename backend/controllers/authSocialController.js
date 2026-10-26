@@ -77,7 +77,7 @@ const handleSocialCallback = (provider) => asyncHandler(async (req, res) => {
         name: profile.name,
         email: profile.email,
         password: crypto.randomBytes(32).toString('hex'), // Random password (never used)
-        role: 'customer',
+        role: 'user',
         [socialIdField]: socialId
       });
     } else if (!user[socialIdField]) {

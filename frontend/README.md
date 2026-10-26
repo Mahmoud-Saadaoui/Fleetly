@@ -48,6 +48,8 @@ Fleetly est une application web de location automobile permettant aux clients de
 git clone <votre-url-depot> fleetly-frontend
 cd fleetly-frontend
 npm install
+cp .env.example .env
+# Définir VITE_API_URL (par défaut http://localhost:5001/api)
 npm run dev
 ```
 

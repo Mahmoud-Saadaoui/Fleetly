@@ -5,13 +5,13 @@
 ### 1.1 Backend (déjà implémenté)
 - **Stack**: Express 4 + Mongoose (MongoDB) + JWT + express-validator
 - **Auth**: classique (register/login) + OAuth Google/Facebook
-- **Rôles**: customer, agent, fleet_manager, finance_manager, support, admin (avec compat isAdmin)
+- **Rôles canoniques**: `user`, `agency_manager`, `admin` (avec compat `isAdmin`)
 - **Fonctionnalités**:
   - Gestion utilisateurs (CRUD admin, invitation, soft delete)
-  - Véhicules (listing public, création admin/fleet_manager, mise à jour statut, édition/suppression admin)
+  - Véhicules (listing public, création par `agency_manager`/`admin`, mise à jour statut, édition/suppression par `admin`)
   - Branches/agences (CRUD complet)
-  - Réservations (devis, création, historique utilisateur, mise à jour statut par admin/agent/fleet)
-  - Vue agent par agences assignées
+  - Réservations (devis, création, historique utilisateur, mise à jour statut par `admin`/`agency_manager`)
+  - Vue par agences assignées pour `agency_manager`
   - Analytics (overview, rentabilité)
   - Pagination centralisée + helpers API
   - Tests: 76 tests passent (node:test)
@@ -50,7 +50,7 @@ Créer une plateforme de location voiture **fonctionnelle, propre et démontrabl
 
 **Fonctionnalités clés à livrer**:
 
-1. **Interface utilisateur (customer)**
+1. **Interface utilisateur (client)**
 - Catalogue véhicules avec filtres (marque/modèle, catégorie, agence/branche, prix, disponibilité)
 - Page détail véhicule
 - Processus de réservation (sélection dates pickup/return, calcul devis/prix, confirmation)
@@ -159,7 +159,7 @@ frontend/src/
 - Persister dans localStorage
 - Interceptor axios: ajouter Authorization header, gérer 401 (logout)
 - ProtectedRoute pour routes protégées
-- RoleGuard pour admin/fleet_manager/agent
+- RoleGuard pour `admin`/`agency_manager`
 - Connexion sociale: boutons Google/Facebook redirigent vers API backend (/api/auth/google etc), callback à gérer ou redirection backend renvoie token? Backend renvoie JSON avec token - si redirection classique, mieux passer token via query param ou utiliser flow SPA. À vérifier: actuellement backend fait res.redirect/url; pour SPA, on peut soit adapter backend pour renvoyer token+user en JSON, soit passer token dans URL callback et récupérer.
 
 ### 6.2 Catalogue véhicules (public)
@@ -200,7 +200,7 @@ Implémenter FullCalendar:
 - Filtres: par branche, par véhicule, par statut
 - Optionnel: glisser-déposer pour changer dates (à éviter MVP, peut complexifier validation conflits)
 
-**Données**: utiliser GET /api/agent/bookings (admin voit tout). Mapper vers format FullCalendar {id, title, start, end, backgroundColor, extendedProps}
+**Données**: utiliser GET /api/agent/bookings (`agency_manager`/`admin`). Mapper vers format FullCalendar {id, title, start, end, backgroundColor, extendedProps}
 
 ## 7. UX/UI améliorations
 
@@ -218,7 +218,7 @@ Créer script `backend/seed/demo.js` pour générer données démonstrables:
 
 - 2-3 branches (Paris, Lyon...)
 - 6-10 véhicules variés (catégories existantes)
-- 2-3 utilisateurs admin/fleet_manager + quelques clients
+- 2-3 utilisateurs `admin`/`agency_manager` + quelques clients `user`
 - 3-5 réservations avec statuts différents + dates proches (pour calendrier visible)
 
 Ajouter script npm: `"seed": "node seed/demo.js"`
@@ -240,7 +240,7 @@ Mettre à jour `.env.example` frontend: `VITE_API_URL`
 ### Étape 1: Setup frontend base (0.5-1j)
 - [ ] Créer api/axios.js avec interceptors
 - [ ] Créer context/AuthContext + hooks/useAuth
-- [ ] Créer ProtectedRoute + RoleGuard
+- [ ] Créer ProtectedRoute + RoleGuard (rôles canoniques `user`, `agency_manager`, `admin`)
 - [ ] Connecter Login/Register existants à API backend
 - [ ] Mettre à jour App.jsx avec routes
 - [ ] Ajouter .env VITE_API_URL
@@ -259,11 +259,11 @@ Mettre à jour `.env.example` frontend: `VITE_API_URL`
 - [ ] BranchesList + BranchesForm
 - [ ] UsersList (admin)
 - [ ] BookingsList (admin/agent/fleet)
-- [ ] Gérer rôles/permissions UI
+- [ ] Gérer rôles/permissions UI selon les rôles canoniques (`user`, `agency_manager`, `admin`)
 
 ### Étape 4: Calendrier réservations (1-1.5j)
 - [ ] Installer @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction
-- [ ] Créer CalendarPage (admin)
+- [ ] Créer CalendarPage (admin/agency_manager)
 - [ ] Mapper bookings vers events (confirmed/active)
 - [ ] Filtres par branche/statut
 - [ ] Modal détail événement
@@ -274,7 +274,7 @@ Mettre à jour `.env.example` frontend: `VITE_API_URL`
 - [ ] États vides/loading
 - [ ] Validation formulaires
 - [ ] Améliorer Header (menu connecté/déconnecté)
-- [ ] Créer seed/demo.js
+- [ ] Créer seed/demo.js avec rôles canoniques (`admin`, `agency_manager`, `user`)
 - [ ] Script npm seed
 - [ ] Tests manuels parcours complet
 
@@ -296,7 +296,7 @@ Mettre à jour `.env.example` frontend: `VITE_API_URL`
   "@fullcalendar/timegrid": "^6.x",
   "@fullcalendar/interaction": "^6.x",
   "date-fns": "^4.x",
-  "react-datepicker": "^7.x" (alternative) ou natif
+  "react-datepicker": "^7.x"
 }
 ```
 
@@ -307,10 +307,10 @@ Mettre à jour `.env.example` frontend: `VITE_API_URL`
 - [ ] Un visiteur peut parcourir véhicules et voir disponibilités
 - [ ] Un client peut s'inscrire/se connecter et réserver un véhicule
 - [ ] Un client voit son historique "Mes locations"
-- [ ] Un admin accède à dashboard complet
-- [ ] L'admin voit **calendrier des réservations en cours** (confirmed + active)
+- [ ] Un `admin`/`agency_manager` accède au dashboard selon ses permissions
+- [ ] L'opérateur voit **calendrier des réservations en cours** (confirmed + active)
 - [ ] CRUD véhicules/agences/réservations fonctionnel
-- [ ] Gestion utilisateurs/rôles OK
+- [ ] Gestion utilisateurs/rôles OK avec les rôles canoniques
 - [ ] Design cohérent, responsive
 - [ ] Données démo convaincantes
 - [ ] Pas d'erreurs console

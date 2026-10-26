@@ -18,7 +18,7 @@ const getAgentBookings = asyncHandler(async (req, res) => {
   const filter = {};
 
   // Filter by branch if user is an agent
-  if (req.currentUser.role === 'agent') {
+  if (req.currentUser.role === 'agency_manager') {
     const branchIds = req.currentUser.branchIds || [];
     if (branchIds.length === 0) {
       // Agent with no branches: no bookings visible

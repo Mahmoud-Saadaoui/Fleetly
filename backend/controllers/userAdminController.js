@@ -124,7 +124,7 @@ const deleteUser = asyncHandler(async (req, res) => {
  * POST /api/admin/users/invite
  */
 const inviteUser = asyncHandler(async (req, res) => {
-  const { name, email, role = 'customer', branchIds = [] } = req.body;
+  const { name, email, role = 'user', branchIds = [] } = req.body;
 
   // Check if email already exists
   const existingUser = await User.findOne({ email });

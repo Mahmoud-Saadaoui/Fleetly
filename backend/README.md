@@ -12,7 +12,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Le serveur écoute par défaut sur le port `5000`.
+Le serveur écoute par défaut sur le port `5001`.
 
 ## Routes principales
 
@@ -22,27 +22,36 @@ Le serveur écoute par défaut sur le port `5000`.
 | POST | `/api/users/login` | Public |
 | GET | `/api/users/me` | Authentifié |
 | GET | `/api/vehicles` | Public |
-| POST | `/api/vehicles` | Admin / responsable de flotte |
-| PATCH | `/api/vehicles/:id/status` | Admin / flotte / agent |
+| POST | `/api/vehicles` | `admin` / `agency_manager` |
+| PATCH | `/api/vehicles/:id/status` | `admin` / `agency_manager` |
 | POST | `/api/bookings/quote` | Public |
-| POST | `/api/bookings` | Client authentifié |
-| GET | `/api/bookings/mine` | Client authentifié |
-| PATCH | `/api/bookings/:id/status` | Admin / flotte / agent |
-| GET | `/api/analytics/overview` | Admin / flotte / finance |
-| GET | `/api/analytics/profitability` | Admin / flotte / finance |
+| POST | `/api/bookings` | Client authentifié (`user`) |
+| GET | `/api/bookings/mine` | Client authentifié (`user`) |
+| PATCH | `/api/bookings/:id/status` | `admin` / `agency_manager` |
+| GET | `/api/analytics/overview` | `admin` |
+| GET | `/api/analytics/profitability` | `admin` |
 | GET | `/health` | Public |
 
 Toutes les routes protégées utilisent `Authorization: Bearer <JWT>`.
 
 ## Rôles
 
-`customer`, `agent`, `fleet_manager`, `finance_manager`, `support` et `admin`.
+Rôles canoniques : `user`, `agency_manager`, `admin`.
 
-Les rôles sont vérifiés côté serveur. Les responsables et agents sont limités aux agences présentes dans `branchIds`.
+Les rôles sont vérifiés côté serveur. Les `agency_manager` sont limités aux agences présentes dans `branchIds`.
 
 ## Variables d’environnement
 
 Voir `.env.example`. Les montants métier sont stockés en centimes et les réservations utilisent une clé d’idempotence pour éviter les doublons.
+
+## Scripts
+
+```bash
+npm run dev      # Démarrage en développement
+npm run seed     # Données de démo
+npm test         # Tests
+npm run check    # Vérification syntaxe/lint
+```
 
 ## Vérifier le projet
 
