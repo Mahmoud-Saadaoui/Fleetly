@@ -35,9 +35,21 @@ const validateEnv = () => {
   validateInteger('TRUST_PROXY_HOPS', { min: 0, max: 10 });
   validateInteger('MONGO_MAX_POOL_SIZE', { min: 1, max: 500 });
 
-  // if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_PRODUCTION_DOMAIN?.trim()) {
-  //   throw new Error('CLIENT_PRODUCTION_DOMAIN is required in production');
-  // }
+  if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_PRODUCTION_DOMAIN?.trim()) {
+    throw new Error('CLIENT_PRODUCTION_DOMAIN is required in production');
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.CLIENT_ALLOWED_ORIGINS?.trim() && !process.env.CLIENT_PRODUCTION_DOMAIN?.trim()) {
+      throw new Error('CLIENT_ALLOWED_ORIGINS or CLIENT_PRODUCTION_DOMAIN is required in production');
+    }
+    if (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_SECRET) {
+      if (!process.env.GOOGLE_CALLBACK_URL?.trim()) throw new Error('GOOGLE_CALLBACK_URL is required in production when Google OAuth is configured');
+    }
+    if (process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_APP_SECRET) {
+      if (!process.env.FACEBOOK_CALLBACK_URL?.trim()) throw new Error('FACEBOOK_CALLBACK_URL is required in production when Facebook OAuth is configured');
+    }
+  }
 
   if (process.env.BCRYPT_ROUNDS) {
     const rounds = Number(process.env.BCRYPT_ROUNDS);

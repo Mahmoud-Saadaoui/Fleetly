@@ -23,6 +23,7 @@ export const bookingsAPI = {
   quote: (data) => api.post('/bookings/quote', data),
   create: (data) => api.post('/bookings', data),
   getMine: (params) => api.get('/bookings/mine', { params }),
+  getMineById: (id) => api.get(`/bookings/mine/${id}`),
   cancel: (id, data = {}) => api.post(`/bookings/${id}/cancel`, data),
   updateStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
 };

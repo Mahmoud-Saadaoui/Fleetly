@@ -108,14 +108,26 @@ const getMyBookings = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
 
   const filter = { customer: req.userId };
+  if (req.query.status && req.query.status !== 'all') {
+    filter.status = req.query.status;
+  }
 
   // Fetch paginated bookings + total in parallel
   const [bookings, total] = await Promise.all([
-    Booking.find(filter).populate('vehicle').sort({ startAt: -1 }).skip(skip).limit(limit).lean(),
+    Booking.find(filter).populate('vehicle').populate('pickupBranch').populate('returnBranch').sort({ startAt: -1 }).skip(skip).limit(limit).lean(),
     Booking.countDocuments(filter)
   ]);
 
   return paginatedResponse(res, bookings, getPaginationMeta(page, limit, total), 'Bookings retrieved successfully');
+});
+
+const getMyBookingById = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id).populate('vehicle').populate('pickupBranch').populate('returnBranch').lean();
+  if (!booking) return notFoundResponse(res, 'Booking');
+  if (String(booking.customer) !== String(req.userId)) {
+    return forbiddenResponse(res, 'You can only view your own booking');
+  }
+  return successResponse(res, booking, 'Booking retrieved successfully');
 });
 
 const updateBookingStatus = asyncHandler(async (req, res) => {
@@ -178,4 +190,4 @@ const cancelMyBooking = asyncHandler(async (req, res) => {
   return successResponse(res, booking, 'Booking cancelled successfully');
 });
 
-module.exports = { quoteBooking, createBooking, getMyBookings, updateBookingStatus, cancelMyBooking };
+module.exports = { quoteBooking, createBooking, getMyBookings, getMyBookingById, updateBookingStatus, cancelMyBooking };

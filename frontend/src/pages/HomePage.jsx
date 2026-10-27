@@ -12,6 +12,7 @@ const HomePage = () => {
     startDate: "",
     endDate: ""
   });
+  const [searchError, setSearchError] = useState("");
 
   useEffect(() => {
     setIsVisible(true);
@@ -118,6 +119,14 @@ const HomePage = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              const start = search.startDate ? new Date(search.startDate) : null;
+              const end = search.endDate ? new Date(search.endDate) : null;
+              if ((search.startDate || search.endDate) &&
+                (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start || start < new Date())) {
+                setSearchError(t("home.hero.invalidDates", "Please select a valid future date range."));
+                return;
+              }
+              setSearchError("");
               const params = new URLSearchParams();
               if (search.branch) params.set('branch', search.branch);
               if (search.startDate) params.set('from', search.startDate);
@@ -163,6 +172,7 @@ const HomePage = () => {
                 </button>
               </div>
             </div>
+            {searchError && <p role="alert" className="mt-3 text-sm text-red-300">{searchError}</p>}
           </form>
         </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { bookingsAPI } from "../../api/endpoints";
 import { formatCurrency, formatDateTime } from "../../utils/format";
@@ -22,14 +23,12 @@ const BookingsPage = () => {
   const [filter, setFilter] = useState("all");
   const [cancellingId, setCancellingId] = useState(null);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [pagination.page]);
-
-  const fetchBookings = async () => {
+  const fetchBookings = async (page = pagination.page) => {
     setLoading(true);
     try {
-      const res = await bookingsAPI.getMine({ page: pagination.page, limit: pagination.limit });
+      const params = { page, limit: pagination.limit };
+      if (filter !== "all") params.status = filter;
+      const res = await bookingsAPI.getMine(params);
       if (res.data.success) {
         setBookings(res.data.data);
         setPagination(res.data.pagination);
@@ -40,6 +39,11 @@ const BookingsPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchBookings(pagination.page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page, filter]);
 
   const statusLabel = (status) => t(`bookings.status.${status}`);
 
@@ -68,8 +72,7 @@ const BookingsPage = () => {
     }
   };
 
-  const filteredBookings =
-    filter === "all" ? bookings : bookings.filter((b) => b.status === filter);
+  const filteredBookings = bookings; // server-side filtered
 
   return (
     <div className="min-h-screen bg-dark px-6 pt-24 pb-16">
@@ -86,7 +89,7 @@ const BookingsPage = () => {
           {["all", "pending_payment", "confirmed", "active", "completed", "cancelled"].map((status) => (
             <button
               key={status}
-              onClick={() => setFilter(status)}
+              onClick={() => { setFilter(status); setPagination((p) => ({ ...p, page: 1 })); }}
               className={`px-4 py-2 rounded-full text-sm font-cairo transition-colors ${
                 filter === status
                   ? "bg-accent text-dark font-semibold"
@@ -107,9 +110,10 @@ const BookingsPage = () => {
         ) : (
           <div className="space-y-4">
             {filteredBookings.map((booking) => (
-              <div
+              <Link
+                to={`/my-bookings/${booking._id}`}
                 key={booking._id}
-                className="bg-dark-light/50 border border-white/10 rounded-2xl p-6 hover:border-accent/30 transition-colors"
+                className="block bg-dark-light/50 border border-white/10 rounded-2xl p-6 hover:border-accent/30 transition-colors"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                   <div>
@@ -137,13 +141,13 @@ const BookingsPage = () => {
                   </div>
                   <div>
                     <p className="text-gray-400 mb-1">{t("bookings.total")}</p>
-                    <p className="text-accent font-semibold">{formatCurrency(booking.pricing?.totalCents)}</p>
+                    <p className="text-accent font-semibold">{formatCurrency(booking.pricing?.totalCents, booking.pricing?.currency)}</p>
                   </div>
                 </div>
                 {canCancel(booking) && (
                   <div className="mt-4">
                     <button
-                      onClick={() => handleCancel(booking)}
+                      onClick={(e) => { e.preventDefault(); handleCancel(booking); }}
                       disabled={cancellingId === booking._id}
                       className="px-4 py-2 text-sm rounded-lg border border-red-400/40 text-red-300 hover:bg-red-500/10 disabled:opacity-50"
                     >
@@ -151,7 +155,7 @@ const BookingsPage = () => {
                     </button>
                   </div>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         )}

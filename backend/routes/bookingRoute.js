@@ -4,11 +4,12 @@ const auth = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const validate = require('../middlewares/validate');
 const bookingRules = require('../validators/bookingValidator');
-const { quoteBooking, createBooking, getMyBookings, updateBookingStatus, cancelMyBooking } = require('../controllers/bookingController');
+const { quoteBooking, createBooking, getMyBookings, getMyBookingById, updateBookingStatus, cancelMyBooking } = require('../controllers/bookingController');
 
 router.post('/quote', bookingRules.quote, validate, quoteBooking);
 router.post('/', auth.check, authorize('user', 'admin', 'agency_manager'), bookingRules.create, validate, createBooking);
 router.get('/mine', auth.check, authorize('user', 'admin', 'agency_manager'), getMyBookings);
+router.get('/mine/:id', auth.check, authorize('user', 'admin', 'agency_manager'), getMyBookingById);
 router.post('/:id/cancel', auth.check, authorize('user', 'admin', 'agency_manager'), bookingRules.cancel, validate, cancelMyBooking);
 router.patch('/:id/status', auth.check, authorize('admin', 'agency_manager'), updateBookingStatus);
 

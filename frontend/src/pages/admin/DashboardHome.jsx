@@ -28,6 +28,7 @@ const DashboardHome = () => {
 
       const newStats = {
         revenueCents: overviewRes.status === "fulfilled" ? overviewRes.value.data.data.revenueCents : 0,
+        currency: overviewRes.status === "fulfilled" ? overviewRes.value.data.data.currency : "EUR",
         bookings: overviewRes.status === "fulfilled" ? overviewRes.value.data.data.bookings : 0,
         fleetTotal: overviewRes.status === "fulfilled" ? overviewRes.value.data.data.fleetTotal : 0,
         occupancyRate: overviewRes.status === "fulfilled" ? overviewRes.value.data.data.occupancyRate : 0,
@@ -47,7 +48,7 @@ const DashboardHome = () => {
   };
 
   const statsCards = [
-    { title: t("admin.dashboard.revenue30"), value: formatCurrency(stats?.revenueCents), icon: FaEuroSign, color: "text-green-400" },
+    { title: t("admin.dashboard.revenue30"), value: formatCurrency(stats?.revenueCents, stats?.currency), icon: FaEuroSign, color: "text-green-400" },
     { title: t("admin.dashboard.bookings30"), value: stats?.bookings || 0, icon: FaClipboardList, color: "text-blue-400" },
     { title: t("admin.dashboard.vehicles"), value: stats?.totalVehicles || 0, icon: FaCar, color: "text-accent" },
     { title: t("admin.dashboard.branches"), value: stats?.totalBranches || 0, icon: FaBuilding, color: "text-purple-400" },

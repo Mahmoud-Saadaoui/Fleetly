@@ -17,6 +17,8 @@ const generateIdempotencyKey = () => {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 };
 
+const QUOTE_TTL_MS = 10 * 60 * 1000;
+
 const buildDateTime = (date, time) => {
   if (!date) return null;
   const [hours, minutes] = (time || "10:00").split(":").map(Number);
@@ -58,6 +60,9 @@ const VehicleDetailPage = () => {
     notes: initialDraft?.notes || "",
   }));
   const [quote, setQuote] = useState(null);
+  const [quoteExpiresAt, setQuoteExpiresAt] = useState(null);
+  const [quoteError, setQuoteError] = useState("");
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [quoting, setQuoting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() => generateIdempotencyKey());
@@ -153,13 +158,16 @@ const VehicleDetailPage = () => {
     // Never ask for a quote while the vehicle itself is not bookable.
     if (vehicleStatus !== "available") {
       setQuote(null);
+      setQuoteExpiresAt(null);
       return undefined;
     }
     if (!startAt || !endAt || endAt <= startAt) {
       setQuote(null);
+      setQuoteExpiresAt(null);
       return undefined;
     }
     setQuote(null);
+    setQuoteError("");
     setIdempotencyKey(generateIdempotencyKey());
     let cancelled = false;
     const run = async () => {
@@ -170,11 +178,15 @@ const VehicleDetailPage = () => {
           startAt: startAt.toISOString(),
           endAt: endAt.toISOString(),
         });
-        if (!cancelled && res.data.success) setQuote(res.data.data);
+        if (!cancelled && res.data.success) {
+          setQuote(res.data.data);
+          setQuoteExpiresAt(Date.now() + QUOTE_TTL_MS);
+        }
       } catch (err) {
         if (!cancelled) {
           setQuote(null);
-          toast.error(getApiErrorMessage(err, t("vehicleDetail.quoteError")));
+          setQuoteExpiresAt(null);
+          setQuoteError(getApiErrorMessage(err, t("vehicleDetail.quoteError")));
         }
       } finally {
         if (!cancelled) setQuoting(false);
@@ -184,22 +196,31 @@ const VehicleDetailPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [startAt, endAt, id, vehicleStatus]);
+  }, [startAt, endAt, id, vehicleStatus, quoteAttempt]);
 
   const handleSelectRange = (start, end) => {
     if (!end) {
       setRange({ start, end: null });
       setQuote(null);
+      setQuoteExpiresAt(null);
+      setQuoteError("");
       setIdempotencyKey(generateIdempotencyKey());
       return;
     }
     if (rangeTouchesBooking(start, end, bookedDays)) {
       toast.error(t("vehicleDetail.rangeUnavailable"));
       setQuote(null);
+      setQuoteExpiresAt(null);
+      setQuoteError("");
       setIdempotencyKey(generateIdempotencyKey());
       return;
     }
     setRange({ start, end });
+  };
+
+  const retryQuote = () => {
+    setQuoteError("");
+    setQuoteAttempt((attempt) => attempt + 1);
   };
 
   const handleChange = (e) => {
@@ -222,7 +243,10 @@ const VehicleDetailPage = () => {
       toast.error(t("vehicleDetail.selectDates"));
       return;
     }
-    if (!quote) {
+    if (!quote || !quoteExpiresAt || Date.now() >= quoteExpiresAt) {
+      setQuote(null);
+      setQuoteExpiresAt(null);
+      setQuoteError(t("vehicleDetail.quoteExpired", "Your quote expired. Please retry."));
       toast.error(t("vehicleDetail.quoteFirst"));
       return;
     }
@@ -243,7 +267,15 @@ const VehicleDetailPage = () => {
         navigate("/my-bookings");
       }
     } catch (err) {
-      toast.error(getApiErrorMessage(err, t("vehicleDetail.bookingError")));
+      if (err.response?.status === 409) {
+        setQuote(null);
+        setQuoteExpiresAt(null);
+        setIdempotencyKey(generateIdempotencyKey());
+        await fetchAvailability();
+        setQuoteError(getApiErrorMessage(err, t("vehicleDetail.rangeUnavailable")));
+      } else {
+        setQuoteError(getApiErrorMessage(err, t("vehicleDetail.bookingError")));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -352,7 +384,7 @@ const VehicleDetailPage = () => {
             <div className="lg:col-span-1">
               <div className="bg-dark-light/50 border border-white/10 rounded-2xl p-6">
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-bold text-accent">{formatCurrency(vehicle.dailyRateCents)}</span>
+                  <span className="text-3xl font-bold text-accent">{formatCurrency(vehicle.dailyRateCents, vehicle.currency)}</span>
                   <span className="text-gray-400">{t("vehicleDetail.perDay")}</span>
                 </div>
 
@@ -446,11 +478,20 @@ const VehicleDetailPage = () => {
                           {t("common.loading")}
                         </div>
                       ) : (
-                        quote && (
+                        <>
+                          {quoteError && (
+                            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+                              <p>{quoteError}</p>
+                              <button type="button" onClick={retryQuote} className="mt-2 text-accent underline">
+                                {t("common.retry", "Retry")}
+                              </button>
+                            </div>
+                          )}
+                          {quote && quoteExpiresAt > Date.now() && (
                           <div className="bg-dark border border-accent/30 rounded-lg p-4 space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-gray-400">{t("vehicleDetail.dailyRate")}</span>
-                              <span>{formatCurrency(quote.pricing.dailyRateCents)}</span>
+                              <span>{formatCurrency(quote.pricing.dailyRateCents, quote.pricing.currency)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-400">{t("vehicleDetail.days")}</span>
@@ -458,18 +499,19 @@ const VehicleDetailPage = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-400">{t("vehicleDetail.subtotal")}</span>
-                              <span>{formatCurrency(quote.pricing.subtotalCents)}</span>
+                              <span>{formatCurrency(quote.pricing.subtotalCents, quote.pricing.currency)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-400">{t("vehicleDetail.tax")}</span>
-                              <span>{formatCurrency(quote.pricing.taxCents)}</span>
+                              <span>{formatCurrency(quote.pricing.taxCents, quote.pricing.currency)}</span>
                             </div>
                             <div className="flex justify-between border-t border-white/10 pt-2 mt-2 text-lg font-semibold">
                               <span>{t("vehicleDetail.total")}</span>
-                              <span className="text-accent">{formatCurrency(quote.pricing.totalCents)}</span>
+                              <span className="text-accent">{formatCurrency(quote.pricing.totalCents, quote.pricing.currency)}</span>
                             </div>
                           </div>
-                        )
+                          )}
+                        </>
                       )}
 
                       <button

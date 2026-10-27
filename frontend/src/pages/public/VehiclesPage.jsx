@@ -80,8 +80,8 @@ const VehiclesPage = () => {
         ...filters,
       };
       if (appliedSearch) params.search = appliedSearch;
-      if (dateFilters.from) params.dateFrom = dateFilters.from;
-      if (dateFilters.to) params.dateTo = dateFilters.to;
+      if (dateFilters.from) params.from = dateFilters.from;
+      if (dateFilters.to) params.to = dateFilters.to;
       Object.keys(params).forEach(key => {
         if (!params[key]) delete params[key];
       });
@@ -120,6 +120,7 @@ const VehiclesPage = () => {
 
   const isInitialLoading = loading && !initialized;
   const isRefetching = loading && initialized;
+  const hasAvailabilityWindow = Boolean(dateFilters.from && dateFilters.to);
 
   return (
     <div className="min-h-screen bg-dark pt-24 pb-16 px-6">
@@ -311,7 +312,7 @@ const VehiclesPage = () => {
                             <span className="text-xs text-gray-400 ms-1">{t("vehicles.perDay")}</span>
                           </td>
                           <td className="px-5 py-4 text-end">
-                            {vehicle.status === "available" ? (
+                            {(vehicle.available ?? (vehicle.status === "available")) ? (
                               <Link
                                 to={`/vehicles/${vehicle._id}`}
                                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-accent text-dark hover:bg-accent-light transition-colors whitespace-nowrap"
@@ -325,7 +326,9 @@ const VehiclesPage = () => {
                               // Not bookable: show the status instead of a CTA
                               // that would only ever fail at booking time.
                               <span className="inline-flex items-center px-4 py-2 text-xs font-semibold rounded-full bg-white/10 text-gray-300 whitespace-nowrap">
-                                {t(`admin.statuses.${vehicle.status}`, vehicle.status)}
+                                {hasAvailabilityWindow && vehicle.status === "available"
+                                  ? t("vehicles.unavailableForDates", "Unavailable for selected dates")
+                                  : t(`admin.statuses.${vehicle.status}`, vehicle.status)}
                               </span>
                             )}
                           </td>

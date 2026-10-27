@@ -14,6 +14,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const VehiclesPage = lazy(() => import("./pages/public/VehiclesPage"));
 const VehicleDetailPage = lazy(() => import("./pages/public/VehicleDetailPage"));
 const BookingsPage = lazy(() => import("./pages/user/BookingsPage"));
+const BookingDetailPage = lazy(() => import("./pages/user/BookingDetailPage"));
 const DashboardHome = lazy(() => import("./pages/admin/DashboardHome"));
 const VehiclesList = lazy(() => import("./pages/admin/VehiclesList"));
 const VehiclesForm = lazy(() => import("./pages/admin/VehiclesForm"));
@@ -54,13 +55,29 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/bookings/:id"
+            element={
+              <ProtectedRoute>
+                <BookingDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-bookings/:id"
+            element={
+              <ProtectedRoute>
+                <BookingDetailPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* Admin routes with DashboardLayout */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute roles={["admin","agency_manager","user"]}>
+            <ProtectedRoute roles={["admin","agency_manager"]}>
               <DashboardLayout />
             </ProtectedRoute>
           }

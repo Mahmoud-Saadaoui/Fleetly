@@ -36,7 +36,7 @@ const AnalyticsPage = () => {
         <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-dark-light/50 border border-white/10 rounded-xl p-6">
             <h3 className="text-sm text-gray-400 mb-2">{t("admin.analytics.revenue")}</h3>
-            <p className="text-2xl font-bold">{formatCurrency(overview.revenueCents)}</p>
+            <p className="text-2xl font-bold">{formatCurrency(overview.revenueCents, overview.currency)}</p>
           </div>
           <div className="bg-dark-light/50 border border-white/10 rounded-xl p-6">
             <h3 className="text-sm text-gray-400 mb-2">{t("admin.analytics.bookings")}</h3>

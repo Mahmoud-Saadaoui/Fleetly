@@ -15,11 +15,11 @@ i18n
       fr: { translation: fr },
       ar: { translation: ar },
     },
-    fallbackLng: "en",
+    fallbackLng: "fr",
     interpolation: { escapeValue: false },
 
     detection: {
-      order: ["localStorage", "navigator", "cookie", "htmlTag", "path", "subdomain"],
+      order: ["localStorage", "cookie"],
       caches: ["localStorage", "cookie"],
       lookupLocalStorage: "i18nextLng",
       lookupCookie: "i18next",
