@@ -2,8 +2,49 @@ const crypto = require('crypto');
 const User = require('../models/user');
 const jwtHelpers = require('../utils/jwtHelpers');
 const { asyncHandler } = require('../middlewares/asyncHandler');
+const { successResponse, unauthorizedResponse } = require('../utils/apiResponse');
 const { getGoogleAuthUrl, getGoogleProfile } = require('../services/googleAuth');
 const { getFacebookAuthUrl, getFacebookProfile } = require('../services/facebookAuth');
+
+const EXCHANGE_CODE_TTL_MS = 60 * 1000;
+const exchangeCodes = new Map();
+
+/**
+ * One-time code handed to the browser instead of the JWT (which must never
+ * appear in a URL). Single-use and short-lived. Kept in memory: a multi-instance
+ * deployment needs a shared store.
+ */
+const issueExchangeCode = (userId) => {
+  const now = Date.now();
+  for (const [key, entry] of exchangeCodes) {
+    if (entry.expiresAt < now) exchangeCodes.delete(key);
+  }
+  const code = crypto.randomBytes(32).toString('hex');
+  exchangeCodes.set(code, { userId: String(userId), expiresAt: now + EXCHANGE_CODE_TTL_MS });
+  return code;
+};
+
+const consumeExchangeCode = (code) => {
+  const entry = exchangeCodes.get(code);
+  exchangeCodes.delete(code);
+  if (!entry || entry.expiresAt < Date.now()) return null;
+  return entry.userId;
+};
+
+/**
+ * Trades a one-time code for an access token
+ * POST /api/auth/exchange
+ */
+const exchangeSocialCode = asyncHandler(async (req, res) => {
+  const code = typeof req.body?.code === 'string' ? req.body.code : '';
+  const userId = code ? consumeExchangeCode(code) : null;
+  if (!userId) return unauthorizedResponse(res, 'Invalid or expired code');
+
+  const user = await User.findById(userId).select('isActive').lean();
+  if (!user || user.isActive === false) return unauthorizedResponse(res, 'Account is disabled');
+
+  return successResponse(res, { accessToken: jwtHelpers.sign({ sub: userId }) }, 'Login successful');
+});
 
 /**
  * Resolves the frontend base URL used to redirect the browser back after OAuth.
@@ -94,11 +135,8 @@ const handleSocialCallback = (provider) => asyncHandler(async (req, res) => {
       return redirectToClient(res, { error: 'Account is disabled' });
     }
 
-    // Step 4: Generate JWT
-    const token = jwtHelpers.sign({ sub: user._id });
-
-    // Step 5: Redirect back to the frontend with the access token
-    return redirectToClient(res, { token });
+    // Step 4: Redirect back to the frontend with a one-time code (never the JWT)
+    return redirectToClient(res, { code: issueExchangeCode(user._id) });
   } catch (err) {
     // Handle specific, user-facing errors; hide internal details otherwise
     const isExpected = /verified|accessible/i.test(err.message);
@@ -128,6 +166,8 @@ const redirectToFacebook = (req, res) => {
 
 module.exports = {
   handleSocialCallback,
+  exchangeSocialCode,
+  issueExchangeCode,
   redirectToGoogle,
   redirectToFacebook
 };

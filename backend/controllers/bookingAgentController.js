@@ -3,6 +3,7 @@ const Booking = require('../models/booking');
 const { asyncHandler } = require('../middlewares/asyncHandler');
 const { badRequestResponse, paginatedResponse } = require('../utils/apiResponse');
 const { parsePagination, getPaginationMeta } = require('../utils/pagination');
+const { escapeRegex } = require('../utils/search');
 
 /**
  * Bookings visible to an agent (filtered by their branches)
@@ -80,8 +81,7 @@ const getAgentBookings = asyncHandler(async (req, res) => {
     } else if (searchTerm.length > 60) {
       return badRequestResponse(res, 'Search term too long');
     } else {
-      const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const searchRegex = new RegExp(escaped, 'i');
+      const searchRegex = new RegExp(escapeRegex(searchTerm), 'i');
       conditions.push({ notes: searchRegex });
     }
   }

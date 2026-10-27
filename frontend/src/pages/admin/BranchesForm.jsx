@@ -22,9 +22,9 @@ const BranchesForm = () => {
 
   const fetchBranch = async () => {
     try {
-      const res = await branchesAPI.getAll({ limit: 100 });
+      const res = await branchesAPI.getById(id);
       if (res.data.success) {
-        const found = res.data.data.find(b => b._id === id);
+        const found = res.data.data;
         if (found) setFormData(found);
       }
     } catch {

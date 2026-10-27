@@ -4,6 +4,7 @@ const User = require('../models/user');
 const Branch = require('../models/branch');
 const bcrypt = require('bcryptjs');
 const jwtHelpers = require('../utils/jwtHelpers');
+const { escapeRegex } = require('../utils/search');
 const { asyncHandler } = require('../middlewares/asyncHandler');
 const {
   successResponse,
@@ -11,6 +12,7 @@ const {
   notFoundResponse,
   badRequestResponse,
   conflictResponse,
+  forbiddenResponse,
   paginatedResponse
 } = require('../utils/apiResponse');
 const { parsePagination, getPaginationMeta } = require('../utils/pagination');
@@ -30,7 +32,7 @@ const listUsers = asyncHandler(async (req, res) => {
     filter.branchIds = req.query.branchId;
   }
   if (req.query.search) {
-    const searchRegex = new RegExp(req.query.search, 'i');
+    const searchRegex = new RegExp(escapeRegex(String(req.query.search).slice(0, 60)), 'i');
     filter.$or = [
       { name: searchRegex },
       { email: searchRegex }

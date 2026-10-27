@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { canTransition } = require('../utils/bookingStateMachine');
 
 const ACTIVE_STATUSES = ['pending_payment', 'confirmed', 'active'];
 
@@ -34,6 +35,7 @@ const BookingSchema = new mongoose.Schema({
     index: true
   },
   paymentStatus: { type: String, enum: ['pending', 'authorized', 'paid', 'refunded', 'failed'], default: 'pending' },
+  expiresAt: { type: Date, index: true },
   idempotencyKey: { type: String, trim: true, maxlength: 128, select: false },
   notes: { type: String, trim: true, maxlength: 1000 },
   checkIn: { completedAt: Date, mileage: Number, fuelLevel: Number, photos: [String], signatureUrl: String },
@@ -46,6 +48,26 @@ BookingSchema.index({ customer: 1, status: 1, createdAt: -1 });
 BookingSchema.index({ vehicle: 1, status: 1, startAt: 1, endAt: 1 });
 BookingSchema.index({ customer: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
 BookingSchema.statics.activeStatuses = ACTIVE_STATUSES;
+
+BookingSchema.post('init', function () {
+  this.$locals.originalStatus = this.status;
+});
+
+BookingSchema.pre('save', function (next) {
+  if (!this.isNew && this.isModified('status')) {
+    const originalStatus = this.$locals.originalStatus;
+    if (!originalStatus || !canTransition(originalStatus, this.status)) {
+      const err = new Error(`Invalid booking status transition from ${originalStatus || 'unknown'} to ${this.status}`);
+      err.name = 'ValidationError';
+      return next(err);
+    }
+  }
+  next();
+});
+
+BookingSchema.post('save', function () {
+  this.$locals.originalStatus = this.status;
+});
 
 BookingSchema.set('toJSON', { virtuals: true, versionKey: false });
 

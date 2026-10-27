@@ -2,9 +2,12 @@ const express = require('express');
 const router = express.Router();
 const {
   handleSocialCallback,
+  exchangeSocialCode,
   redirectToGoogle,
   redirectToFacebook
 } = require('../controllers/authSocialController');
+
+router.post('/exchange', exchangeSocialCode);
 
 // Google OAuth2
 router.get('/google', redirectToGoogle);

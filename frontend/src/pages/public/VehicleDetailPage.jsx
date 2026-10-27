@@ -10,6 +10,13 @@ import { clearBookingDraft, loadBookingDraft, saveBookingDraft } from "../../uti
 import AvailabilityCalendar from "../../components/booking/AvailabilityCalendar";
 import toast from "react-hot-toast";
 
+const generateIdempotencyKey = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+};
+
 const buildDateTime = (date, time) => {
   if (!date) return null;
   const [hours, minutes] = (time || "10:00").split(":").map(Number);
@@ -53,6 +60,7 @@ const VehicleDetailPage = () => {
   const [quote, setQuote] = useState(null);
   const [quoting, setQuoting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => generateIdempotencyKey());
 
   useEffect(() => {
     fetchVehicle();
@@ -151,6 +159,8 @@ const VehicleDetailPage = () => {
       setQuote(null);
       return undefined;
     }
+    setQuote(null);
+    setIdempotencyKey(generateIdempotencyKey());
     let cancelled = false;
     const run = async () => {
       setQuoting(true);
@@ -179,10 +189,14 @@ const VehicleDetailPage = () => {
   const handleSelectRange = (start, end) => {
     if (!end) {
       setRange({ start, end: null });
+      setQuote(null);
+      setIdempotencyKey(generateIdempotencyKey());
       return;
     }
     if (rangeTouchesBooking(start, end, bookedDays)) {
       toast.error(t("vehicleDetail.rangeUnavailable"));
+      setQuote(null);
+      setIdempotencyKey(generateIdempotencyKey());
       return;
     }
     setRange({ start, end });
@@ -221,10 +235,11 @@ const VehicleDetailPage = () => {
         pickupBranch: bookingData.pickupBranch || undefined,
         returnBranch: bookingData.returnBranch || undefined,
         notes: bookingData.notes,
+        idempotencyKey,
       });
       if (res.data.success) {
         clearBookingDraft();
-        toast.success(t("vehicleDetail.bookingSuccess"));
+        toast.success(res.data.message || t("vehicleDetail.bookingSuccess"));
         navigate("/my-bookings");
       }
     } catch (err) {

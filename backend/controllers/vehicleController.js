@@ -13,9 +13,7 @@ const parseWindow = (from, to) => {
   return { startAt, endAt };
 };
 
-// Free-text search on make/model. The user input is escaped so it can neither
-// inject regex syntax nor trigger catastrophic backtracking.
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const { escapeRegex } = require('../utils/search');
 
 const getVehicles = asyncHandler(async (req, res) => {
   const { category, branch, from, to, status, search } = req.query;
@@ -80,7 +78,7 @@ const getVehicleById = asyncHandler(async (req, res) => {
     _id: req.params.id,
     isDeleted: false,
     status: { $ne: 'retired' }
-  }).populate('branch').lean();
+  }, '-vin -registrationNumber').populate('branch').lean();
 
   if (!vehicle) return notFoundResponse(res, 'Vehicle');
   return successResponse(res, vehicle, 'Vehicle retrieved successfully');

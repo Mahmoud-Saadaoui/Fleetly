@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { bookingsAPI } from "../../api/endpoints";
 import { formatCurrency, formatDateTime } from "../../utils/format";
+import { getApiErrorMessage } from "../../utils/apiError";
+import toast from "react-hot-toast";
 
 const STATUS_COLORS = {
   pending_payment: "bg-yellow-500/20 text-yellow-400",
@@ -18,6 +20,7 @@ const BookingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [filter, setFilter] = useState("all");
+  const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
     fetchBookings();
@@ -39,6 +42,31 @@ const BookingsPage = () => {
   };
 
   const statusLabel = (status) => t(`bookings.status.${status}`);
+
+  const canCancel = (booking) => {
+    if (['completed', 'cancelled', 'no_show', 'active'].includes(booking.status)) return false;
+    if (booking.status === 'confirmed' && booking.startAt) {
+      return new Date(booking.startAt).getTime() - Date.now() >= 24 * 60 * 60 * 1000;
+    }
+    return booking.status === 'pending_payment';
+  };
+
+  const handleCancel = async (booking) => {
+    const reason = window.prompt(t('bookings.cancelReasonPrompt') || 'Cancellation reason (optional)');
+    if (reason === null) return;
+    setCancellingId(booking._id);
+    try {
+      const res = await bookingsAPI.cancel(booking._id, { reason });
+      if (res.data.success) {
+        toast.success(res.data.message || t('bookings.cancelled'));
+        fetchBookings();
+      }
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, t('bookings.cancelError') || 'Failed to cancel booking'));
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const filteredBookings =
     filter === "all" ? bookings : bookings.filter((b) => b.status === filter);
@@ -112,6 +140,17 @@ const BookingsPage = () => {
                     <p className="text-accent font-semibold">{formatCurrency(booking.pricing?.totalCents)}</p>
                   </div>
                 </div>
+                {canCancel(booking) && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => handleCancel(booking)}
+                      disabled={cancellingId === booking._id}
+                      className="px-4 py-2 text-sm rounded-lg border border-red-400/40 text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                    >
+                      {cancellingId === booking._id ? (t('common.loading') || '...') : (t('bookings.cancel') || 'Cancel')}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

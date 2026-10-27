@@ -2,8 +2,10 @@ const mongoose = require('mongoose');
 const Vehicle = require('../models/vehicle');
 const Booking = require('../models/booking');
 const { asyncHandler } = require('../middlewares/asyncHandler');
-const { successResponse, createdResponse, notFoundResponse, badRequestResponse, conflictResponse, paginatedResponse } = require('../utils/apiResponse');
+const { successResponse, createdResponse, notFoundResponse, badRequestResponse, conflictResponse, paginatedResponse, forbiddenResponse } = require('../utils/apiResponse');
 const { parsePagination, getPaginationMeta } = require('../utils/pagination');
+const { canTransition } = require('../utils/bookingStateMachine');
+const { createBookingAtomic } = require('../services/bookingService');
 
 const TAX_RATE = Number(process.env.RENTAL_TAX_RATE) || 0.2;
 
@@ -73,47 +75,32 @@ const createBooking = asyncHandler(async (req, res) => {
   const dates = parseDates(startAt, endAt);
   if (!dates) return badRequestResponse(res, 'Invalid booking dates');
 
-  if (idempotencyKey) {
-    const existing = await Booking.findOne({ customer: req.userId, idempotencyKey }).populate('vehicle');
-    if (existing) return successResponse(res, existing, 'Booking already exists');
+  try {
+    const result = await createBookingAtomic({
+      customerId: req.userId,
+      vehicleId,
+      dates,
+      pickupBranch,
+      returnBranch,
+      idempotencyKey,
+      notes
+    });
+    if (result.created) {
+      return createdResponse(res, result.booking, 'Reservation request submitted for confirmation');
+    }
+    return successResponse(res, result.booking, 'Reservation request already exists');
+  } catch (error) {
+    if (error.statusCode === 400) {
+      if (error.message === 'Invalid pickup branch') return badRequestResponse(res, 'Invalid pickup branch');
+      if (error.message === 'Pickup branch is not active') return badRequestResponse(res, 'Pickup branch is not active');
+      if (error.message === 'Invalid return branch') return badRequestResponse(res, 'Invalid return branch');
+      if (error.message === 'Return branch is not active') return badRequestResponse(res, 'Return branch is not active');
+      return badRequestResponse(res, error.message);
+    }
+    if (error.statusCode === 404) return notFoundResponse(res, 'Vehicle');
+    if (error.statusCode === 409) return conflictResponse(res, error.message);
+    throw error;
   }
-
-  const Branch = require('../models/branch');
-  if (pickupBranch) {
-    if (!mongoose.isValidObjectId(pickupBranch)) return badRequestResponse(res, 'Invalid pickup branch');
-    const pb = await Branch.findById(pickupBranch).select('isActive');
-    if (!pb) return badRequestResponse(res, 'Invalid pickup branch');
-    if (pb.isActive === false) return badRequestResponse(res, 'Pickup branch is not active');
-  }
-  if (returnBranch) {
-    if (!mongoose.isValidObjectId(returnBranch)) return badRequestResponse(res, 'Invalid return branch');
-    const rb = await Branch.findById(returnBranch).select('isActive');
-    if (!rb) return badRequestResponse(res, 'Invalid return branch');
-    if (rb.isActive === false) return badRequestResponse(res, 'Return branch is not active');
-  }
-
-  const vehicleQuery = Vehicle.findOne({ _id: vehicleId, isDeleted: false, status: { $ne: 'retired' } });
-  if (typeof vehicleQuery.populate === 'function') {
-    vehicleQuery.populate('branch');
-  }
-  const vehicle = typeof vehicleQuery.lean === 'function' ? await vehicleQuery.lean() : await vehicleQuery;
-  if (!vehicle) return notFoundResponse(res, 'Vehicle');
-  if (vehicle.status !== 'available') return conflictResponse(res, `Vehicle is ${statusText(vehicle.status)} and cannot be booked`);
-  if (await findConflict(vehicleId, dates)) return conflictResponse(res, 'Vehicle is already booked for these dates');
-
-  const booking = await Booking.create({
-    customer: req.userId,
-    vehicle: vehicle._id,
-    pickupBranch,
-    returnBranch,
-    startAt: dates.startAt,
-    endAt: dates.endAt,
-    pricing: buildPricing(vehicle, dates.rentalDays),
-    idempotencyKey,
-    notes,
-    status: 'pending_payment'
-  });
-  return createdResponse(res, await booking.populate('vehicle'), 'Booking created successfully');
 });
 
 const getMyBookings = asyncHandler(async (req, res) => {
@@ -140,10 +127,55 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
   if (req.currentUser.role !== 'admin' && (!booking.vehicle?.branch || !branchIds.some((id) => String(id) === String(booking.vehicle.branch)))) {
     return conflictResponse(res, 'Booking is outside your branch scope');
   }
+  if (booking.expiresAt && booking.status === 'pending_payment' && booking.expiresAt < new Date() && req.body.status !== 'cancelled') {
+    return badRequestResponse(res, 'Reservation request has expired');
+  }
+  if (!canTransition(booking.status, req.body.status)) {
+    return badRequestResponse(res, `Invalid booking status transition from ${booking.status} to ${req.body.status}`);
+  }
   booking.status = req.body.status;
-  if (req.body.status === 'cancelled') booking.cancelledAt = new Date();
+  if (req.body.status === 'cancelled') {
+    booking.cancelledAt = new Date();
+    booking.paymentStatus = booking.paymentStatus === 'paid' ? 'refunded' : 'failed';
+  }
+  if (req.body.status === 'confirmed') {
+    booking.paymentStatus = 'authorized';
+  }
+  if (req.body.status === 'active') {
+    booking.paymentStatus = 'paid';
+  }
   await booking.save();
   return successResponse(res, booking, 'Booking status updated successfully');
 });
 
-module.exports = { quoteBooking, createBooking, getMyBookings, updateBookingStatus };
+const cancelMyBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return notFoundResponse(res, 'Booking');
+  if (String(booking.customer) !== String(req.userId)) {
+    return forbiddenResponse(res, 'You can only cancel your own booking');
+  }
+  if (['completed', 'cancelled', 'no_show'].includes(booking.status)) {
+    return badRequestResponse(res, 'Booking cannot be cancelled in its current state');
+  }
+  // Free cancellation allowed for requests not yet confirmed/active; confirmed/active follow documented window
+  if (booking.status === 'active') {
+    return badRequestResponse(res, 'Active bookings cannot be cancelled online');
+  }
+  if (booking.status === 'confirmed') {
+    // Documented window: at least 24h before start
+    if (booking.startAt && booking.startAt.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
+      return badRequestResponse(res, 'Cancellation window has expired');
+    }
+  }
+  if (!canTransition(booking.status, 'cancelled')) {
+    return badRequestResponse(res, 'Booking cannot be cancelled');
+  }
+  booking.status = 'cancelled';
+  booking.cancelledAt = new Date();
+  booking.cancellationReason = req.body?.reason?.trim() || 'Cancelled by customer';
+  booking.paymentStatus = booking.paymentStatus === 'paid' ? 'refunded' : 'failed';
+  await booking.save();
+  return successResponse(res, booking, 'Booking cancelled successfully');
+});
+
+module.exports = { quoteBooking, createBooking, getMyBookings, updateBookingStatus, cancelMyBooking };

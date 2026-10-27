@@ -6,22 +6,16 @@ const { validateEnv } = require('../config/validateEnv');
 process.env.JWT_SECRET = 'test-secret-with-at-least-32-characters';
 process.env.JWT_EXPIRES_IN = '1h';
 
-const mongoose = require('mongoose');
 const User = require('../models/user');
 const auth = require('../middlewares/auth');
 const { requestId } = require('../middlewares/requestId');
 
-// Mock User.findById for tests
-const originalFindById = User.findById;
-User.findById = function () {
-  return {
-    select: function () {
-      return {
-        lean: async function () {
-          return { isActive: true };
-        }
-      };
-    }
+// Stubs User.findById for the duration of one test and returns a restore function.
+const stubUser = (user) => {
+  const original = User.findById;
+  User.findById = () => ({ select: () => ({ lean: async () => user }) });
+  return () => {
+    User.findById = original;
   };
 };
 
@@ -66,12 +60,40 @@ test('accepts a valid Bearer token with an ObjectId subject', async () => {
   const response = createResponse();
   let nextCalled = false;
 
-  await auth.check(request, response, () => {
-    nextCalled = true;
-  });
+  const restore = stubUser({ isActive: true });
+  try {
+    await auth.check(request, response, () => {
+      nextCalled = true;
+    });
+  } finally {
+    restore();
+  }
 
   assert.equal(nextCalled, true);
   assert.equal(request.userId, '507f1f77bcf86cd799439011');
+});
+
+test('rejects a valid Bearer token whose account is disabled', async () => {
+  const token = jwt.sign(
+    { sub: '507f1f77bcf86cd799439011' },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h', algorithm: 'HS256' }
+  );
+  const request = { ip: '127.0.0.1', path: '/api/users/me', get: () => `Bearer ${token}` };
+  const response = createResponse();
+  let nextCalled = false;
+
+  const restore = stubUser({ isActive: false });
+  try {
+    await auth.check(request, response, () => {
+      nextCalled = true;
+    });
+  } finally {
+    restore();
+  }
+
+  assert.equal(nextCalled, false);
+  assert.equal(response.statusCode, 401);
 });
 
 test('replaces an invalid incoming request id', () => {

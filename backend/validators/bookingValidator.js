@@ -36,6 +36,12 @@ const bookingRules = {
     body('endAt')
       .notEmpty().withMessage('endAt is required')
       .isISO8601().withMessage('endAt must be a valid date')
+  ],
+  cancel: [
+    body('reason')
+      .optional()
+      .trim()
+      .isLength({ max: 500 }).withMessage('reason cannot exceed 500 characters')
   ]
 };
 

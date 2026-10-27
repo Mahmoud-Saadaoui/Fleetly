@@ -53,15 +53,16 @@ const VehiclesForm = () => {
 
   const fetchVehicle = async () => {
     try {
-      const res = await vehiclesAPI.getAll({ limit: 100 });
+      const res = await vehiclesAPI.getById(id);
       if (res.data.success) {
-        const found = res.data.data.find(v => v._id === id);
+        const found = res.data.data;
         if (found) {
           setFormData({
             ...found,
-            dailyRateCents: found.dailyRateCents.toString(),
-            seats: found.seats.toString(),
+            dailyRateCents: found.dailyRateCents?.toString() || "",
+            seats: found.seats?.toString() || "5",
             mileage: found.mileage?.toString() || "0",
+            branch: typeof found.branch === 'object' ? found.branch?._id || "" : found.branch || "",
             images: Array.isArray(found.images) ? found.images : [],
           });
         }

@@ -47,8 +47,9 @@ const getBranches = asyncHandler(async (req, res) => {
   // Optional filter by city
   const filter = {};
   if (req.query.city) filter['address.city'] = new RegExp(req.query.city, 'i');
-  // Hide inactive branches for public/listing unless explicitly requested by staff
-  if (req.query.includeInactive !== 'true') {
+  // Inactive branches are hidden unless a staff member explicitly asks for them
+  const isStaff = ['admin', 'agency_manager'].includes(req.currentUser?.role);
+  if (!(isStaff && req.query.includeInactive === 'true')) {
     filter.isActive = { $ne: false };
   }
 

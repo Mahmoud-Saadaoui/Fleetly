@@ -23,6 +23,7 @@ export const bookingsAPI = {
   quote: (data) => api.post('/bookings/quote', data),
   create: (data) => api.post('/bookings', data),
   getMine: (params) => api.get('/bookings/mine', { params }),
+  cancel: (id, data = {}) => api.post(`/bookings/${id}/cancel`, data),
   updateStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
 };
 
@@ -61,6 +62,7 @@ export const analyticsAPI = {
 export const socialAuthAPI = {
   google: () => `${API_URL}/auth/google`,
   facebook: () => `${API_URL}/auth/facebook`,
+  exchangeCode: (code) => api.post('/auth/exchange', { code }),
   loginWithGoogle: () => {
     window.location.href = `${API_URL}/auth/google`;
   },
