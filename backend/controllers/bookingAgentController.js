@@ -43,6 +43,13 @@ const getAgentBookings = asyncHandler(async (req, res) => {
     filter.status = req.query.status;
   }
 
+  if (req.query.vehicleId) {
+    if (!mongoose.isValidObjectId(req.query.vehicleId)) {
+      return badRequestResponse(res, 'Invalid vehicle ID');
+    }
+    filter.vehicle = req.query.vehicleId;
+  }
+
   if (req.query.branchId) {
     if (!mongoose.isValidObjectId(req.query.branchId)) {
       return badRequestResponse(res, 'Invalid branch ID');
@@ -57,20 +64,23 @@ const getAgentBookings = asyncHandler(async (req, res) => {
   }
 
   if (req.query.dateFrom || req.query.dateTo) {
-    filter.startAt = {};
+    const rangeCondition = { $and: [] };
     if (req.query.dateFrom) {
       const from = new Date(req.query.dateFrom);
       if (Number.isNaN(from.getTime())) {
         return badRequestResponse(res, 'Invalid start date');
       }
-      filter.startAt.$gte = from;
+      rangeCondition.$and.push({ endAt: { $gte: from } });
     }
     if (req.query.dateTo) {
       const to = new Date(req.query.dateTo);
       if (Number.isNaN(to.getTime())) {
         return badRequestResponse(res, 'Invalid end date');
       }
-      filter.startAt.$lte = to;
+      rangeCondition.$and.push({ startAt: { $lte: to } });
+    }
+    if (rangeCondition.$and.length > 0) {
+      conditions.push(rangeCondition);
     }
   }
 

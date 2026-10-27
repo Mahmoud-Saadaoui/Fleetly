@@ -18,7 +18,10 @@ const getOverview = asyncHandler(async (req, res) => {
   const dates = rangeDates(req.query.range || '30d');
   if (!dates) return badRequestResponse(res, 'Invalid analytics range');
   const bookingFilter = {
-    startAt: { $gte: dates.from, $lt: dates.to },
+    $and: [
+      { startAt: { $lt: dates.to } },
+      { endAt: { $gt: dates.from } }
+    ],
     status: { $in: ['confirmed', 'active', 'completed'] }
   };
   const [bookings, fleetTotal, activeFleet, maintenanceFleet] = await Promise.all([
@@ -27,18 +30,28 @@ const getOverview = asyncHandler(async (req, res) => {
     Vehicle.countDocuments({ isDeleted: false, status: { $in: ['available', 'reserved', 'rented'] } }),
     Vehicle.countDocuments({ isDeleted: false, status: 'maintenance' })
   ]);
-  const revenueCents = bookings.reduce((sum, booking) => sum + (booking.pricing?.totalCents || 0), 0);
+  const revenueByCurrency = bookings.reduce((totals, booking) => {
+    const currency = booking.pricing?.currency || 'EUR';
+    totals[currency] = (totals[currency] || 0) + (booking.pricing?.totalCents || 0);
+    return totals;
+  }, {});
+  const currencies = Object.keys(revenueByCurrency);
+  const revenueCents = currencies.length <= 1 ? (revenueByCurrency[currencies[0] || 'EUR'] || 0) : null;
   const rentedDays = bookings.reduce((sum, booking) => {
-    const start = Math.max(booking.startAt.getTime(), dates.from.getTime());
-    const end = Math.min(booking.endAt.getTime(), dates.to.getTime());
+    const start = Math.max(new Date(booking.startAt).getTime(), dates.from.getTime());
+    const end = Math.min(new Date(booking.endAt).getTime(), dates.to.getTime());
+    if (end <= start) return sum;
     return sum + Math.max(0, Math.ceil((end - start) / 86400000));
   }, 0);
-  const availableDays = Math.max(1, fleetTotal * dates.days);
+  const denominatorFleet = Math.max(0, fleetTotal - maintenanceFleet);
+  const availableDays = Math.max(1, denominatorFleet * dates.days);
   return successResponse(res, {
     range: { from: dates.from, to: dates.to, days: dates.days },
     revenueCents,
     bookings: bookings.length,
-    averageBookingCents: bookings.length ? Math.round(revenueCents / bookings.length) : 0,
+    averageBookingCents: currencies.length <= 1 && bookings.length ? Math.round(revenueCents / bookings.length) : null,
+    revenueByCurrency,
+    currency: currencies.length === 1 ? currencies[0] : null,
     occupancyRate: Number(((rentedDays / availableDays) * 100).toFixed(1)),
     fleetTotal,
     activeFleet,
@@ -59,20 +72,31 @@ const getProfitability = asyncHandler(async (req, res) => {
 
   // Fetch paginated vehicles + total in parallel
   const [vehicles, total] = await Promise.all([
-    Vehicle.find(vehicleFilter).lean(),
+    Vehicle.find(vehicleFilter).sort({ _id: 1 }).skip(skip).limit(limit).lean(),
     Vehicle.countDocuments(vehicleFilter)
   ]);
 
-  const bookings = await Booking.find({ startAt: { $gte: dates.from, $lt: dates.to }, status: { $in: ['confirmed', 'active', 'completed'] } }).select('vehicle pricing').lean();
+  const bookings = await Booking.find({
+    $and: [
+      { startAt: { $lt: dates.to } },
+      { endAt: { $gt: dates.from } }
+    ],
+    status: { $in: ['confirmed', 'active', 'completed'] }
+  }).select('vehicle pricing').lean();
   const revenueByVehicle = new Map();
-  bookings.forEach((booking) => revenueByVehicle.set(String(booking.vehicle), (revenueByVehicle.get(String(booking.vehicle)) || 0) + (booking.pricing?.totalCents || 0)));
+  bookings.forEach((booking) => {
+    const current = revenueByVehicle.get(String(booking.vehicle)) || { totalCents: 0, currency: booking.pricing?.currency || 'EUR' };
+    current.totalCents += booking.pricing?.totalCents || 0;
+    revenueByVehicle.set(String(booking.vehicle), current);
+  });
 
   // Calculate profitability only for vehicles on current page
   const result = vehicles.map((vehicle) => {
-    const revenueCents = revenueByVehicle.get(String(vehicle._id)) || 0;
+    const revenue = revenueByVehicle.get(String(vehicle._id)) || { totalCents: 0, currency: vehicle.currency || 'EUR' };
+    const revenueCents = revenue.totalCents;
     const costsCents = (vehicle.maintenanceCostCents || 0) + ((vehicle.ownershipCostCentsPerDay || 0) * dates.days);
     const marginCents = revenueCents - costsCents;
-    return { vehicleId: vehicle._id, name: `${vehicle.make} ${vehicle.model}`, category: vehicle.category, revenueCents, costsCents, marginCents, marginRate: revenueCents ? Number(((marginCents / revenueCents) * 100).toFixed(1)) : 0 };
+    return { vehicleId: vehicle._id, name: `${vehicle.make} ${vehicle.model}`, category: vehicle.category, currency: revenue.currency, revenueCents, costsCents, marginCents, marginRate: revenueCents ? Number(((marginCents / revenueCents) * 100).toFixed(1)) : 0 };
   }).sort((a, b) => b.marginCents - a.marginCents);
 
   return paginatedResponse(res, result, getPaginationMeta(page, limit, total), 'Vehicle profitability retrieved successfully');

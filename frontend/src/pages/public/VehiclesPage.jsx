@@ -14,13 +14,17 @@ const VehiclesPage = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("q") || "";
+  const initialBranch = searchParams.get("branch") || "";
+  const initialFrom = searchParams.get("from") || "";
+  const initialTo = searchParams.get("to") || "";
 
   const [vehicles, setVehicles] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, pages: 0 });
-  const [filters, setFilters] = useState({ category: "", branch: "" });
+  const [filters, setFilters] = useState({ category: "", branch: initialBranch });
+  const [dateFilters, setDateFilters] = useState({ from: initialFrom, to: initialTo });
 
   // `searchInput` updates on every keystroke for a responsive field, while
   // `appliedSearch` only changes once the user stopped typing (debounced),
@@ -54,7 +58,7 @@ const VehiclesPage = () => {
     const controller = new AbortController();
     fetchVehicles(controller.signal);
     return () => controller.abort();
-  }, [filters.category, filters.branch, appliedSearch, pagination.page]);
+  }, [filters.category, filters.branch, appliedSearch, pagination.page, dateFilters.from, dateFilters.to]);
 
   const fetchBranches = async () => {
     try {
@@ -76,6 +80,8 @@ const VehiclesPage = () => {
         ...filters,
       };
       if (appliedSearch) params.search = appliedSearch;
+      if (dateFilters.from) params.dateFrom = dateFilters.from;
+      if (dateFilters.to) params.dateTo = dateFilters.to;
       Object.keys(params).forEach(key => {
         if (!params[key]) delete params[key];
       });
@@ -104,9 +110,11 @@ const VehiclesPage = () => {
 
   const handleReset = () => {
     setFilters({ category: "", branch: "" });
+    setDateFilters({ from: "", to: "" });
     // Applied immediately (not through the debounce) to avoid a stale request.
     setSearchInput("");
     setAppliedSearch("");
+    setSearchParams({}, { replace: true });
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 

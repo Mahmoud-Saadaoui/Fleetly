@@ -7,7 +7,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import frLocale from "@fullcalendar/core/locales/fr";
 import arLocale from "@fullcalendar/core/locales/ar";
 import enGbLocale from "@fullcalendar/core/locales/en-gb";
-import { agentBookingsAPI } from "../../api/endpoints";
+import { agentBookingsAPI, branchesAPI, vehiclesAPI } from "../../api/endpoints";
 import { formatDateTime, formatCurrency } from "../../utils/format";
 import toast from "react-hot-toast";
 
@@ -19,23 +19,36 @@ const CalendarPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [filters, setFilters] = useState({ branchId: '', vehicleId: '', status: '' });
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [branches, setBranches] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  const fetchBookings = async () => {
+  const fetchBookings = async (start, end) => {
+    setLoading(true);
     try {
-      const res = await agentBookingsAPI.getAll({ limit: 1000 });
-      if (res.data.success) {
-        const evts = res.data.data
-          .filter(b => ["confirmed", "active"].includes(b.status))
+      const params = {};
+      if (start) params.dateFrom = start.toISOString ? start.toISOString() : start;
+      if (end) params.dateTo = end.toISOString ? end.toISOString() : end;
+      if (filters.branchId) params.branchId = filters.branchId;
+      if (filters.vehicleId) params.vehicleId = filters.vehicleId;
+      if (filters.status) params.status = filters.status;
+      const first = await agentBookingsAPI.getAll({ ...params, page: 1, limit: 100 });
+      let bookings = first.data.success ? first.data.data : [];
+      const pages = first.data.pagination?.pages || 1;
+      for (let page = 2; page <= pages; page += 1) {
+        const next = await agentBookingsAPI.getAll({ ...params, page, limit: 100 });
+        if (next.data.success) bookings = bookings.concat(next.data.data);
+      }
+      if (first.data.success) {
+        const evts = bookings
+          .filter(b => ["confirmed", "active", "pending_payment"].includes(b.status))
           .map(b => ({
             id: b._id,
             title: `${b.vehicle?.make} ${b.vehicle?.model} - ${b.customer?.name || ""}`,
             start: b.startAt,
             end: b.endAt,
-            backgroundColor: b.status === "active" ? "#22c55e" : "#3b82f6",
+            backgroundColor: b.status === "active" ? "#22c55e" : b.status === "confirmed" ? "#3b82f6" : "#f59e0b",
             borderColor: "transparent",
             extendedProps: { booking: b }
           }));
@@ -47,6 +60,25 @@ const CalendarPage = () => {
       setLoading(false);
     }
   };
+
+  // The option lists are loaded once when the calendar opens.
+  useEffect(() => {
+    Promise.all([branchesAPI.getAll({ limit: 100 }), vehiclesAPI.getAll({ limit: 100 })])
+      .then(([branchResponse, vehicleResponse]) => {
+        if (branchResponse.data.success) setBranches(branchResponse.data.data);
+        if (vehicleResponse.data.success) setVehicles(vehicleResponse.data.data);
+      })
+      .catch(() => toast.error(t("admin.common.error")));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refetch the visible range when a calendar filter changes.
+  useEffect(() => {
+    if (dateRange.start && dateRange.end) {
+      fetchBookings(dateRange.start, dateRange.end);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   const handleEventClick = (info) => {
     setSelectedEvent(info.event.extendedProps.booking);
@@ -60,6 +92,22 @@ const CalendarPage = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-cairo font-bold mb-2">{t("admin.calendar.title")}</h1>
         <p className="text-gray-400">{t("admin.calendar.subtitle")}</p>
+      </div>
+      <div className="bg-dark-light/50 border border-white/10 rounded-xl p-6 mb-6 grid md:grid-cols-3 gap-4">
+        <select value={filters.branchId} onChange={(e) => setFilters(f => ({ ...f, branchId: e.target.value }))} className="px-3 py-2 bg-dark border border-white/10 rounded-lg text-white">
+          <option value="">{t('admin.common.all')} branches</option>
+          {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
+        </select>
+        <select value={filters.vehicleId} onChange={(e) => setFilters(f => ({ ...f, vehicleId: e.target.value }))} className="px-3 py-2 bg-dark border border-white/10 rounded-lg text-white">
+          <option value="">{t('admin.common.all')} vehicles</option>
+          {vehicles.map((vehicle) => <option key={vehicle._id} value={vehicle._id}>{vehicle.make} {vehicle.model}</option>)}
+        </select>
+        <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="px-3 py-2 bg-dark border border-white/10 rounded-lg text-white">
+          <option value="">{t('admin.common.all')}</option>
+          <option value="pending_payment">{t('bookings.status.pending_payment')}</option>
+          <option value="confirmed">{t('bookings.status.confirmed')}</option>
+          <option value="active">{t('bookings.status.active')}</option>
+        </select>
       </div>
       <div className="bg-dark-light/50 border border-white/10 rounded-xl p-6">
         <FullCalendar
@@ -75,6 +123,10 @@ const CalendarPage = () => {
           eventClick={handleEventClick}
           height="700px"
           themeSystem="standard"
+          datesSet={(arg) => {
+            setDateRange({ start: arg.start, end: arg.end });
+            fetchBookings(arg.start, arg.end);
+          }}
         />
       </div>
 

@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 const HomePage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const sectionsRef = useRef([]);
+  const [search, setSearch] = useState({
+    branch: "",
+    startDate: "",
+    endDate: ""
+  });
 
   useEffect(() => {
     setIsVisible(true);
@@ -109,7 +115,15 @@ const HomePage = () => {
           </div>
 
           {/* Search Widget */}
-          <div
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const params = new URLSearchParams();
+              if (search.branch) params.set('branch', search.branch);
+              if (search.startDate) params.set('from', search.startDate);
+              if (search.endDate) params.set('to', search.endDate);
+              navigate(`/vehicles${params.toString() ? `?${params.toString()}` : ''}`);
+            }}
             className={`bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 max-w-4xl mx-auto transition-all duration-1000 delay-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             }`}
@@ -119,6 +133,8 @@ const HomePage = () => {
                 <label className="text-xs text-gray-400 uppercase tracking-wider">{t("home.hero.pickupLocation")}</label>
                 <input
                   type="text"
+                  value={search.branch}
+                  onChange={(e) => setSearch((s) => ({ ...s, branch: e.target.value }))}
                   placeholder={t("home.hero.pickupPlaceholder")}
                   className="w-full mt-2 bg-transparent border-b border-white/20 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-accent transition-colors"
                 />
@@ -127,6 +143,8 @@ const HomePage = () => {
                 <label className="text-xs text-gray-400 uppercase tracking-wider">{t("home.hero.startDate")}</label>
                 <input
                   type="datetime-local"
+                  value={search.startDate}
+                  onChange={(e) => setSearch((s) => ({ ...s, startDate: e.target.value }))}
                   className="w-full mt-2 bg-transparent border-b border-white/20 py-2 text-white focus:outline-none focus:border-accent transition-colors"
                 />
               </div>
@@ -134,16 +152,18 @@ const HomePage = () => {
                 <label className="text-xs text-gray-400 uppercase tracking-wider">{t("home.hero.endDate")}</label>
                 <input
                   type="datetime-local"
+                  value={search.endDate}
+                  onChange={(e) => setSearch((s) => ({ ...s, endDate: e.target.value }))}
                   className="w-full mt-2 bg-transparent border-b border-white/20 py-2 text-white focus:outline-none focus:border-accent transition-colors"
                 />
               </div>
               <div className="flex items-end">
-                <button className="w-full py-3 bg-accent text-dark font-semibold rounded-lg hover:bg-accent-light transition-colors">
+                <button type="submit" className="w-full py-3 bg-accent text-dark font-semibold rounded-lg hover:bg-accent-light transition-colors">
                   {t("home.hero.search")}
                 </button>
               </div>
             </div>
-          </div>
+          </form>
         </div>
 
         {/* Scroll indicator */}
