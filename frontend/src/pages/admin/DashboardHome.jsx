@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { analyticsAPI, agentBookingsAPI, vehiclesAPI, branchesAPI } from "../../api/endpoints";
 import { useAuth } from "../../hooks/useAuth";
 import { formatCurrency } from "../../utils/format";
+import { getApiErrorMessage } from "../../utils/apiError";
 import { FaCar, FaClipboardList, FaBuilding, FaEuroSign } from "react-icons/fa";
 
 const DashboardHome = () => {
@@ -11,13 +12,11 @@ const DashboardHome = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState([]);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const [overviewRes, bookingsRes, vehiclesRes, branchesRes] = await Promise.allSettled([
         analyticsAPI.overview({ range: "30d" }),
@@ -41,11 +40,15 @@ const DashboardHome = () => {
         setRecentBookings(bookingsRes.value.data.data);
       }
     } catch (err) {
-      console.error(err);
+      setError(getApiErrorMessage(err, t("admin.common.error")));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const statsCards = [
     { title: t("admin.dashboard.revenue30"), value: formatCurrency(stats?.revenueCents, stats?.currency), icon: FaEuroSign, color: "text-green-400" },
@@ -58,6 +61,15 @@ const DashboardHome = () => {
     return (
       <div className="flex justify-center py-16">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16 text-red-400">
+        <p className="mb-3">{error}</p>
+        <button type="button" onClick={fetchData} className="px-4 py-2 border border-white/20 rounded-lg">{t("common.retry")}</button>
       </div>
     );
   }

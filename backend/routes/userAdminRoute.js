@@ -12,7 +12,7 @@ const {
   inviteUser
 } = require('../controllers/userAdminController');
 
-// User list (admin, fleet_manager)
+// User list (admin, agency_manager)
 router.get(
   '/',
   auth.check,
@@ -20,7 +20,7 @@ router.get(
   listUsers
 );
 
-// User details (admin, fleet_manager)
+// User details (admin, agency_manager)
 router.get(
   '/:id',
   auth.check,
@@ -46,7 +46,7 @@ router.delete(
   deleteUser
 );
 
-// Invite new user (admin, fleet_manager)
+// Invite new user (admin, agency_manager)
 router.post(
   '/invite',
   auth.check,

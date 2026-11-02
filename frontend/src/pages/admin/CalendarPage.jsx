@@ -9,6 +9,7 @@ import arLocale from "@fullcalendar/core/locales/ar";
 import enGbLocale from "@fullcalendar/core/locales/en-gb";
 import { agentBookingsAPI, branchesAPI, vehiclesAPI } from "../../api/endpoints";
 import { formatDateTime, formatCurrency } from "../../utils/format";
+import { getApiErrorMessage } from "../../utils/apiError";
 import toast from "react-hot-toast";
 
 const CALENDAR_LOCALES = { fr: frLocale, ar: arLocale, en: enGbLocale };
@@ -23,9 +24,12 @@ const CalendarPage = () => {
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [branches, setBranches] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [error, setError] = useState("");
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const fetchBookings = async (start, end) => {
     setLoading(true);
+    setError("");
     try {
       const params = {};
       if (start) params.dateFrom = start.toISOString ? start.toISOString() : start;
@@ -42,22 +46,23 @@ const CalendarPage = () => {
       }
       if (first.data.success) {
         const evts = bookings
-          .filter(b => ["confirmed", "active", "pending_payment"].includes(b.status))
           .map(b => ({
             id: b._id,
-            title: `${b.vehicle?.make} ${b.vehicle?.model} - ${b.customer?.name || ""}`,
+            title: `${b.vehicle?.make || ""} ${b.vehicle?.model || ""} - ${b.customer?.name || ""}`.trim(),
             start: b.startAt,
             end: b.endAt,
-            backgroundColor: b.status === "active" ? "#22c55e" : b.status === "confirmed" ? "#3b82f6" : "#f59e0b",
+            backgroundColor: b.status === "active" ? "#22c55e" : b.status === "confirmed" ? "#3b82f6" : b.status === "pending_payment" ? "#f59e0b" : "#6b7280",
             borderColor: "transparent",
             extendedProps: { booking: b }
           }));
         setEvents(evts);
       }
-    } catch {
+    } catch (err) {
+      setError(getApiErrorMessage(err, t("admin.common.error")));
       toast.error(t("admin.common.error"));
     } finally {
       setLoading(false);
+      setHasLoadedOnce(true);
     }
   };
 
@@ -95,20 +100,26 @@ const CalendarPage = () => {
       </div>
       <div className="bg-dark-light/50 border border-white/10 rounded-xl p-6 mb-6 grid md:grid-cols-3 gap-4">
         <select value={filters.branchId} onChange={(e) => setFilters(f => ({ ...f, branchId: e.target.value }))} className="px-3 py-2 bg-dark border border-white/10 rounded-lg text-white">
-          <option value="">{t('admin.common.all')} branches</option>
+          <option value="">{t('admin.common.allBranches')}</option>
           {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
         </select>
         <select value={filters.vehicleId} onChange={(e) => setFilters(f => ({ ...f, vehicleId: e.target.value }))} className="px-3 py-2 bg-dark border border-white/10 rounded-lg text-white">
-          <option value="">{t('admin.common.all')} vehicles</option>
+          <option value="">{t('admin.common.allVehicles')}</option>
           {vehicles.map((vehicle) => <option key={vehicle._id} value={vehicle._id}>{vehicle.make} {vehicle.model}</option>)}
         </select>
         <select value={filters.status} onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))} className="px-3 py-2 bg-dark border border-white/10 rounded-lg text-white">
-          <option value="">{t('admin.common.all')}</option>
+          <option value="">{t('admin.common.allStatus')}</option>
           <option value="pending_payment">{t('bookings.status.pending_payment')}</option>
           <option value="confirmed">{t('bookings.status.confirmed')}</option>
           <option value="active">{t('bookings.status.active')}</option>
+          <option value="completed">{t('bookings.status.completed')}</option>
+          <option value="cancelled">{t('bookings.status.cancelled')}</option>
+          <option value="no_show">{t('bookings.status.no_show')}</option>
         </select>
       </div>
+      {error && <div className="mb-4 text-red-400">{error}</div>}
+      {loading && events.length > 0 && <div className="mb-4 text-sm text-gray-400">{t("common.loading")}</div>}
+
       <div className="bg-dark-light/50 border border-white/10 rounded-xl p-6">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -128,6 +139,9 @@ const CalendarPage = () => {
             fetchBookings(arg.start, arg.end);
           }}
         />
+        {!loading && hasLoadedOnce && events.length === 0 && (
+          <div className="text-center text-gray-400 mt-6">{t("admin.calendar.empty") || "No bookings in this range"}</div>
+        )}
       </div>
 
       {showModal && selectedEvent && (

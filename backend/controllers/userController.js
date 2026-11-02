@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwtHelpers = require('../utils/jwtHelpers');
 const { asyncHandler } = require('../middlewares/asyncHandler');
 const {
@@ -76,8 +77,33 @@ const getMe = asyncHandler(async (req, res) => {
   }, 'User retrieved successfully');
 });
 
+const acceptInvitation = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const user = await User.findOne({
+    invitationTokenHash: tokenHash,
+    invitationExpiresAt: { $gt: new Date() }
+  }).select('+password +invitationTokenHash +invitationExpiresAt');
+
+  if (!user) return unauthorizedResponse(res, 'Invitation is invalid or expired');
+
+  user.password = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS, 10) || 12);
+  user.invitationTokenHash = undefined;
+  user.invitationExpiresAt = undefined;
+  user.isActive = true;
+  await user.save();
+
+  return successResponse(res, {
+    id: user.id,
+    name: user.name,
+    role: user.role,
+    accessToken: jwtHelpers.sign({ sub: user.id })
+  }, 'Invitation accepted successfully');
+});
+
 module.exports = {
   registerUser,
   loginUser,
-  getMe
+  getMe,
+  acceptInvitation
 };

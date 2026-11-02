@@ -25,7 +25,8 @@
       "pickupPlaceholder": "المدينة أو المطار",
       "startDate": "تاريخ البداية",
       "endDate": "تاريخ النهاية",
-      "search": "بحث"
+      "search": "بحث",
+      "invalidDates": "يرجى اختيار نطاق تواريخ صالح في المستقبل."
     },
     "experience": {
       "title": "اشعر",
@@ -145,7 +146,8 @@
     "bookNow": "احجز الآن",
     "previous": "السابق",
     "next": "التالي",
-    "page": "صفحة {{page}} / {{pages}}"
+    "page": "صفحة {{page}} / {{pages}}",
+    "unavailableForDates": "غير متاح للتواريخ المختارة"
   },
   "vehicleDetail": {
     "notFound": "لم يتم العثور على السيارة",
@@ -198,7 +200,8 @@
     "quoteFirst": "يرجى الحصول على عرض أولاً",
     "bookingSuccess": "تم إنشاء الحجز بنجاح",
     "bookingError": "خطأ أثناء الحجز",
-    "back": "العودة إلى الأسطول"
+    "back": "العودة إلى الأسطول",
+    "quoteExpired": "انتهت صلاحية عرض السعر. يرجى إعادة المحاولة."
   },
   "bookings": {
     "title": "إدارة",
@@ -220,7 +223,23 @@
       "completed": "مكتمل",
       "cancelled": "ملغى",
       "no_show": "لم يحضر"
-    }
+    },
+    "back": "رجوع",
+    "backToList": "العودة إلى حجوزاتي",
+    "cancel": "إلغاء الحجز",
+    "cancelError": "تعذر إلغاء الحجز.",
+    "cancellationReason": "سبب الإلغاء",
+    "cancelled": "تم إلغاء الحجز.",
+    "cancelReasonPrompt": "سبب الإلغاء (اختياري)",
+    "detailSubtitle": "تفاصيل حجزك",
+    "detailTitle": "الحجز",
+    "loadError": "تعذر تحميل الحجز.",
+    "notes": "ملاحظات",
+    "notFound": "الحجز غير موجود.",
+    "paymentStatus": "الدفع",
+    "pickupBranch": "وكالة الاستلام",
+    "reference": "المرجع",
+    "returnBranch": "وكالة الإرجاع"
   },
   "footer": {
     "copyright": "© {{year}} Fleetly",
@@ -228,7 +247,12 @@
   },
   "common": {
     "goHome": "العودة للرئيسية",
-    "loading": "جارٍ التحميل..."
+    "loading": "جارٍ التحميل...",
+    "retry": "إعادة المحاولة",
+    "back": "رجوع",
+    "backHome": "العودة إلى الرئيسية",
+    "close": "إغلاق",
+    "menu": "القائمة"
   },
   "error": {
     "title": "حدث خطأ ما",
@@ -285,7 +309,12 @@
       "amount": "المبلغ",
       "email": "البريد الإلكتروني",
       "role": "الدور",
-      "city": "المدينة"
+      "city": "المدينة",
+      "allBranches": "جميع الوكالات",
+      "allStatus": "جميع الحالات",
+      "allVehicles": "جميع المركبات",
+      "noResults": "لا توجد نتائج",
+      "search": "بحث"
     },
     "dashboard": {
       "title": "لوحة التحكم",
@@ -365,7 +394,8 @@
       "subtitle": "الحجوزات المؤكدة والجارية",
       "details": "تفاصيل الحجز",
       "start": "البداية",
-      "end": "النهاية"
+      "end": "النهاية",
+      "empty": "لا توجد حجوزات في هذه الفترة"
     },
     "analytics": {
       "title": "التحليلات",

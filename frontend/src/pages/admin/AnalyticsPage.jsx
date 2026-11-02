@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { analyticsAPI } from "../../api/endpoints";
 import { formatCurrency, formatNumber } from "../../utils/format";
@@ -9,11 +9,8 @@ const AnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await analyticsAPI.overview({ range: "90d" });
       if (res.data.success) setOverview(res.data.data);
@@ -22,7 +19,11 @@ const AnalyticsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) return <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div></div>;
 

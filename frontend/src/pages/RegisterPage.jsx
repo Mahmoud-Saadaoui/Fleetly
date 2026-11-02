@@ -168,13 +168,13 @@ const RegisterPage = () => {
               />
               <span>
                 {t("auth.acceptTerms")}{" "}
-                <a href="#" className="text-accent hover:text-accent-light transition-colors">
+                <Link to="/legal?section=terms" className="text-accent hover:text-accent-light transition-colors">
                   {t("home.footer.termsConditions")}
-                </a>{" "}
+                </Link>{" "}
                 {t("auth.and")}{" "}
-                <a href="#" className="text-accent hover:text-accent-light transition-colors">
+                <Link to="/legal?section=privacy" className="text-accent hover:text-accent-light transition-colors">
                   {t("home.footer.privacyPolicy")}
-                </a>
+                </Link>
               </span>
             </label>
 

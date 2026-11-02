@@ -27,14 +27,23 @@ const startServer = async () => {
 const shutdown = (signal) => {
   logger.info(`Received ${signal}, shutting down gracefully`);
 
+  const shutdownTimeout = setTimeout(() => {
+    logger.error('Graceful shutdown timeout, forcing exit');
+    process.exit(1);
+  }, 10000);
+
   const closeServer = server
     ? new Promise((resolve) => server.close(resolve))
     : Promise.resolve();
 
   closeServer
     .then(() => mongoose.connection.close(false))
-    .then(() => process.exit(0))
+    .then(() => {
+      clearTimeout(shutdownTimeout);
+      process.exit(0);
+    })
     .catch((error) => {
+      clearTimeout(shutdownTimeout);
       logger.error('Graceful shutdown failed', { message: error.message });
       process.exit(1);
     });

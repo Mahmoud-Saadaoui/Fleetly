@@ -63,12 +63,14 @@ test('atomic create: prevents double booking on concurrent attempts', async () =
     startSession: mongoose.startSession,
     exists: Booking.exists,
     create: Booking.create,
-    findOneVehicle: Vehicle.findOne
+    findOneVehicle: Vehicle.findOne,
+    updateVehicle: Vehicle.updateOne
   };
 
   mongoose.startSession = async () => session;
   Booking.exists = async () => false;
   Vehicle.findOne = () => chain(vehicle);
+  Vehicle.updateOne = async () => ({ acknowledged: true });
   Booking.create = async () => {
     createCalls++;
     if (createCalls === 1) {
@@ -93,6 +95,7 @@ test('atomic create: prevents double booking on concurrent attempts', async () =
     Booking.exists = originals.exists;
     Booking.create = originals.create;
     Vehicle.findOne = originals.findOneVehicle;
+    Vehicle.updateOne = originals.updateVehicle;
   }
 });
 
@@ -124,10 +127,12 @@ test('request flow stores pending payment and a 24-hour expiration', async () =>
   let payload;
   const originalStartSession = mongoose.startSession;
   const originalVehicleFindOne = Vehicle.findOne;
+  const originalVehicleUpdate = Vehicle.updateOne;
   const originalExists = Booking.exists;
   const originalCreate = Booking.create;
   mongoose.startSession = async () => ({ withTransaction: async (fn) => fn(), endSession: async () => {} });
   Vehicle.findOne = () => chain(vehicle);
+  Vehicle.updateOne = async () => ({ acknowledged: true });
   Booking.exists = async () => false;
   Booking.create = async (docs) => {
     payload = docs[0];
@@ -148,6 +153,7 @@ test('request flow stores pending payment and a 24-hour expiration', async () =>
   } finally {
     mongoose.startSession = originalStartSession;
     Vehicle.findOne = originalVehicleFindOne;
+    Vehicle.updateOne = originalVehicleUpdate;
     Booking.exists = originalExists;
     Booking.create = originalCreate;
   }

@@ -9,7 +9,7 @@ const {
   deleteVehicle
 } = require('../controllers/vehicleAdminController');
 
-// Update vehicle (admin, fleet_manager)
+// Update vehicle (admin, agency_manager)
 router.patch(
   '/:id',
   auth.check,
@@ -19,7 +19,7 @@ router.patch(
   updateVehicle
 );
 
-// Delete vehicle (admin, fleet_manager)
+// Delete vehicle (admin, agency_manager)
 router.delete(
   '/:id',
   auth.check,

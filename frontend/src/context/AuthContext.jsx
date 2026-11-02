@@ -22,8 +22,7 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data.data);
           localStorage.setItem('fleetly_user', JSON.stringify(response.data.data));
         }
-      } catch (error) {
-        console.error('Failed to load user:', error);
+      } catch {
         localStorage.removeItem('fleetly_token');
         localStorage.removeItem('fleetly_user');
         setToken(null);

@@ -46,7 +46,13 @@ const BookingSchema = new mongoose.Schema({
 
 BookingSchema.index({ customer: 1, status: 1, createdAt: -1 });
 BookingSchema.index({ vehicle: 1, status: 1, startAt: 1, endAt: 1 });
-BookingSchema.index({ customer: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+// Partial (not sparse): a compound sparse index still indexes documents that
+// have `customer` but no `idempotencyKey`, so every key-less booking of the same
+// customer collided on (customer, null). See DEPLOYMENT.md for the index migration.
+BookingSchema.index(
+  { customer: 1, idempotencyKey: 1 },
+  { unique: true, name: 'customer_idempotency_unique', partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
+);
 BookingSchema.statics.activeStatuses = ACTIVE_STATUSES;
 
 BookingSchema.post('init', function () {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { bookingsAPI } from "../../api/endpoints";
@@ -23,11 +23,7 @@ const BookingDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
 
-  useEffect(() => {
-    fetchBooking();
-  }, [id]);
-
-  const fetchBooking = async () => {
+  const fetchBooking = useCallback(async () => {
     setLoading(true);
     try {
       const res = await bookingsAPI.getMineById(id);
@@ -39,7 +35,11 @@ const BookingDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, t]);
+
+  useEffect(() => {
+    fetchBooking();
+  }, [fetchBooking]);
 
   const statusLabel = (status) => t(`bookings.status.${status}`);
 

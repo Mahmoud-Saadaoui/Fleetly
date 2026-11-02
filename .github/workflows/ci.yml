@@ -16,8 +16,10 @@ permissions:
 
 jobs:
   backend:
-    name: Backend — syntax + tests
+    name: Backend — syntax + tests + audit
     runs-on: ubuntu-latest
+    env:
+      MONGO_TEST_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true
     defaults:
       run:
         working-directory: backend
@@ -33,16 +35,38 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
       # server.js is never loaded by the test suite, so a syntax error there
       # would otherwise slip through.
       - name: Syntax check
         run: npm run check
 
+      # Integration tests need a replica set: transactions guard against double bookings.
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
+          for i in $(seq 1 30); do docker exec mongo mongosh --quiet --eval 'db.adminCommand({ping:1})' >/dev/null 2>&1 && break; sleep 1; done
+          node -e "
+          const mongoose = require('mongoose');
+          (async () => {
+            const conn = await mongoose.createConnection('mongodb://127.0.0.1:27017/admin?directConnection=true').asPromise();
+            await conn.db.admin().command({ replSetInitiate: { _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1:27017' }] } }).catch(() => {});
+            for (let i = 0; i < 30; i++) {
+              const hello = await conn.db.admin().command({ hello: 1 });
+              if (hello.isWritablePrimary) break;
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+            await conn.close();
+          })().catch((e) => { console.error(e); process.exit(1); });
+          "
+
       - name: Run tests
         run: npm test
 
   frontend:
-    name: Frontend — lint + tests + build
+    name: Frontend — lint + tests + build + audit
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,6 +82,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
 
       - name: Lint
         run: npm run lint

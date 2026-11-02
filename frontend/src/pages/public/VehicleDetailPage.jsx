@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { vehiclesAPI, bookingsAPI, branchesAPI } from "../../api/endpoints";
@@ -44,6 +44,8 @@ const VehicleDetailPage = () => {
   const [vehicle, setVehicle] = useState(null);
   const [branches, setBranches] = useState([]);
   const [bookedRanges, setBookedRanges] = useState([]);
+  const [loadError, setLoadError] = useState("");
+  const [availabilityError, setAvailabilityError] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
 
@@ -67,13 +69,8 @@ const VehicleDetailPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() => generateIdempotencyKey());
 
-  useEffect(() => {
-    fetchVehicle();
-    fetchBranches();
-    fetchAvailability();
-  }, [id]);
-
-  const fetchVehicle = async () => {
+  const fetchVehicle = useCallback(async () => {
+    setLoadError("");
     try {
       const res = await vehiclesAPI.getById(id);
       if (res.data.success) {
@@ -85,34 +82,41 @@ const VehicleDetailPage = () => {
         toast.error(t("vehicleDetail.notFound"));
         navigate("/vehicles");
       } else {
-        toast.error(getApiErrorMessage(err, t("vehicleDetail.loadError")));
+        setLoadError(getApiErrorMessage(err, t("vehicleDetail.loadError")));
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate, t]);
 
-  const fetchBranches = async () => {
+  const fetchBranches = useCallback(async () => {
     try {
       const res = await branchesAPI.getAll({ limit: 100 });
       if (res.data.success) {
         setBranches(res.data.data);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setBranches([]);
     }
-  };
+  }, []);
 
-  const fetchAvailability = async () => {
+  const fetchAvailability = useCallback(async () => {
+    setAvailabilityError("");
     try {
       const res = await vehiclesAPI.getAvailability(id);
       if (res.data.success) {
         setBookedRanges(res.data.data.bookedRanges || []);
       }
     } catch (err) {
-      console.error(err);
+      setAvailabilityError(getApiErrorMessage(err, t("vehicleDetail.loadError")));
     }
-  };
+  }, [id, t]);
+
+  useEffect(() => {
+    fetchVehicle();
+    fetchBranches();
+    fetchAvailability();
+  }, [fetchVehicle, fetchBranches, fetchAvailability]);
 
   const bookedDays = useMemo(() => toBookedDayRanges(bookedRanges), [bookedRanges]);
   const startAt = useMemo(() => buildDateTime(range.start, times.pickup), [range.start, times.pickup]);
@@ -196,7 +200,7 @@ const VehicleDetailPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [startAt, endAt, id, vehicleStatus, quoteAttempt]);
+  }, [startAt, endAt, id, vehicleStatus, quoteAttempt, t]);
 
   const handleSelectRange = (start, end) => {
     if (!end) {
@@ -285,6 +289,16 @@ const VehicleDetailPage = () => {
     return (
       <div className="min-h-screen bg-dark flex items-center justify-center pt-24">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-dark flex flex-col items-center justify-center gap-4 pt-24 text-red-300">
+        <p>{loadError}</p>
+        <button type="button" onClick={() => { setLoading(true); fetchVehicle(); }} className="px-4 py-2 border border-white/20 rounded-lg text-white">{t("common.retry")}</button>
+        <Link to="/vehicles" className="text-accent underline">{t("vehicleDetail.back")}</Link>
       </div>
     );
   }
@@ -391,12 +405,19 @@ const VehicleDetailPage = () => {
                 {isBookable ? (
                   <>
                     <h2 className="font-cairo font-semibold mb-3">{t("vehicleDetail.availability")}</h2>
-                    <AvailabilityCalendar
-                      bookedRanges={bookedRanges}
-                      startDate={range.start}
-                      endDate={range.end}
-                      onSelect={handleSelectRange}
-                    />
+                    {availabilityError ? (
+                      <div className="rounded-lg border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-300">
+                        <p>{availabilityError}</p>
+                        <button type="button" onClick={fetchAvailability} className="mt-2 text-accent underline">{t("common.retry")}</button>
+                      </div>
+                    ) : (
+                      <AvailabilityCalendar
+                        bookedRanges={bookedRanges}
+                        startDate={range.start}
+                        endDate={range.end}
+                        onSelect={handleSelectRange}
+                      />
+                    )}
                     <p className="mt-3 text-xs text-gray-500">{t("vehicleDetail.calendarHint")}</p>
 
                     {/* Selected range + times */}

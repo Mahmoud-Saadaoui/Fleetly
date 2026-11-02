@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { vehiclesAPI, branchesAPI } from "../../api/endpoints";
 import { formatCurrency } from "../../utils/format";
 import { getApiErrorMessage } from "../../utils/apiError";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
-import toast from "react-hot-toast";
 
 const VEHICLE_CATEGORIES = ["Premium", "Sport", "Business", "Électrique", "SUV", "Citadine"];
 const SEARCH_DEBOUNCE_MS = 500;
@@ -22,6 +21,8 @@ const VehiclesPage = () => {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, pages: 0 });
   const [filters, setFilters] = useState({ category: "", branch: initialBranch });
   const [dateFilters, setDateFilters] = useState({ from: initialFrom, to: initialTo });
@@ -54,25 +55,20 @@ const VehiclesPage = () => {
     setSearchParams(next, { replace: true });
   }, [appliedSearch, searchParams, setSearchParams]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchVehicles(controller.signal);
-    return () => controller.abort();
-  }, [filters.category, filters.branch, appliedSearch, pagination.page, dateFilters.from, dateFilters.to]);
-
   const fetchBranches = async () => {
     try {
       const res = await branchesAPI.getAll({ limit: 100 });
       if (res.data.success) {
         setBranches(res.data.data);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setBranches([]);
     }
   };
 
-  const fetchVehicles = async (signal) => {
+  const fetchVehicles = useCallback(async (signal) => {
     setLoading(true);
+    setLoadError("");
     try {
       const params = {
         page: pagination.page,
@@ -93,15 +89,20 @@ const VehiclesPage = () => {
     } catch (err) {
       // A superseded request was aborted on purpose: stay silent.
       if (err.name === "CanceledError" || err.code === "ERR_CANCELED") return;
-      toast.error(getApiErrorMessage(err, t("vehicles.loadingError")));
-      console.error(err);
+      setLoadError(getApiErrorMessage(err, t("vehicles.loadingError")));
     } finally {
       if (!signal?.aborted) {
         setLoading(false);
         setInitialized(true);
       }
     }
-  };
+  }, [filters, appliedSearch, pagination.page, pagination.limit, dateFilters.from, dateFilters.to, t]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchVehicles(controller.signal);
+    return () => controller.abort();
+  }, [fetchVehicles, reloadToken]);
 
   const handleFilterChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -211,6 +212,11 @@ const VehiclesPage = () => {
         {isInitialLoading ? (
           <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-16 text-red-400">
+            <p className="mb-3">{loadError}</p>
+            <button type="button" onClick={() => setReloadToken((n) => n + 1)} className="px-4 py-2 border border-white/20 rounded-lg">{t("common.retry")}</button>
           </div>
         ) : vehicles.length === 0 ? (
           <div className="text-center py-16">

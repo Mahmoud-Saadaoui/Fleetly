@@ -1,5 +1,7 @@
 # Fleetly
 
+**MVP release:** `1.0.0-mvp` — reservation requests, operator confirmation and fleet operations.
+
 Fleetly est une plateforme de location automobile et de pilotage de flotte.
 
 ## Espaces produit
@@ -32,3 +34,10 @@ cd frontend && npm test && npm run lint && npm run build
 ```
 
 La stratégie de migration, les rôles RBAC, le modèle métier, les statistiques et le plan de mise en production sont détaillés dans [`_docs/CAR_RENTAL_MIGRATION_PLAN.md`](_docs/CAR_RENTAL_MIGRATION_PLAN.md).
+
+## Limites connues du MVP
+
+- Le paiement en ligne n'est pas activé : une réservation est une demande `pending_payment` que l'opérateur confirme.
+- Les notifications email et les connexions OAuth nécessitent une configuration de production dédiée.
+- Le déploiement, les sauvegardes et la procédure de retour arrière sont décrits dans [`DEPLOYMENT.md`](DEPLOYMENT.md).
+- Avant chaque mise en production, exécuter la release gate documentée dans [`ACCEPTANCE.md`](ACCEPTANCE.md).

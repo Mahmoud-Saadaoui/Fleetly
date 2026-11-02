@@ -6,11 +6,11 @@ const { parsePagination, getPaginationMeta } = require('../utils/pagination');
 const { escapeRegex } = require('../utils/search');
 
 /**
- * Bookings visible to an agent (filtered by their branches)
+ * Bookings visible to an agency manager (filtered by their branches)
  * GET /api/agent/bookings
  *
- * - Agent: only sees bookings for their branches (pickupBranch or returnBranch)
- * - Admin / fleet_manager: see all bookings
+ * - Agency manager: only sees bookings for their branches (pickupBranch or returnBranch)
+ * - Admin: sees all bookings
  */
 const getAgentBookings = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);

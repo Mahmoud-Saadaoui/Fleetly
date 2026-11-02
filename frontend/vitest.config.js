@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config';
 // cover plain JS modules (no DOM, no JSX), so the default node environment is
 // enough and keeps the suite fast.
 export default defineConfig({
+  // Component tests are JSX: use the automatic runtime so React need not be imported.
+  esbuild: { jsx: 'automatic' },
   test: {
     environment: 'node',
     include: ['src/**/*.test.{js,jsx}'],

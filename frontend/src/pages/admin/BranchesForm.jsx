@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { branchesAPI } from "../../api/endpoints";
@@ -16,11 +16,8 @@ const BranchesForm = () => {
     name: "", code: "", address: { street: "", city: "", postalCode: "", country: "FR" }, phone: "", email: ""
   });
 
-  useEffect(() => {
-    if (isEdit) fetchBranch();
-  }, [id]);
 
-  const fetchBranch = async () => {
+  const fetchBranch = useCallback(async () => {
     try {
       const res = await branchesAPI.getById(id);
       if (res.data.success) {
@@ -33,7 +30,11 @@ const BranchesForm = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate, t]);
+
+  useEffect(() => {
+    if (isEdit) fetchBranch();
+  }, [id, isEdit, fetchBranch]);
 
   const handleChange = (e) => {
     if (e.target.name.startsWith("address.")) {

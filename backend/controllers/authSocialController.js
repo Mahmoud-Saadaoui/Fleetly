@@ -8,6 +8,26 @@ const { getFacebookAuthUrl, getFacebookProfile } = require('../services/facebook
 
 const EXCHANGE_CODE_TTL_MS = 60 * 1000;
 const exchangeCodes = new Map();
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const oauthStates = new Map();
+
+const issueOAuthState = () => {
+  const state = crypto.randomBytes(24).toString('hex');
+  oauthStates.set(state, Date.now() + OAUTH_STATE_TTL_MS);
+  return state;
+};
+
+const consumeOAuthState = (state) => {
+  const expiresAt = oauthStates.get(state);
+  oauthStates.delete(state);
+  return Boolean(expiresAt && expiresAt >= Date.now());
+};
+
+const readCookie = (req, name) => {
+  const cookies = String(req.headers?.cookie || '').split(';');
+  const entry = cookies.find((cookie) => cookie.trim().startsWith(`${name}=`));
+  return entry ? decodeURIComponent(entry.trim().slice(name.length + 1)) : null;
+};
 
 /**
  * One-time code handed to the browser instead of the JWT (which must never
@@ -88,7 +108,7 @@ const redirectToClient = (res, params = {}) => {
  * @returns {Function} Express handler
  */
 const handleSocialCallback = (provider) => asyncHandler(async (req, res) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
 
   // The provider can redirect back with an explicit error (e.g. user denied access)
   if (error) {
@@ -98,6 +118,16 @@ const handleSocialCallback = (provider) => asyncHandler(async (req, res) => {
   // Check code presence
   if (!code) {
     return redirectToClient(res, { error: 'Authorization code missing' });
+  }
+
+  // Older non-production integrations may call the callback directly. Real
+  // OAuth callbacks always carry the one-time state generated below; enforce
+  // it strictly in production and validate it whenever supplied.
+  if ((process.env.NODE_ENV === 'production' && !state) || (state && !consumeOAuthState(state))) {
+    return redirectToClient(res, { error: 'Invalid OAuth state' });
+  }
+  if (state && process.env.NODE_ENV === 'production' && readCookie(req, 'fleetly_oauth_state') !== state) {
+    return redirectToClient(res, { error: 'Invalid OAuth state' });
   }
 
   try {
@@ -151,8 +181,11 @@ const handleSocialCallback = (provider) => asyncHandler(async (req, res) => {
  * GET /api/auth/google
  */
 const redirectToGoogle = (req, res) => {
-  const url = getGoogleAuthUrl();
-  res.redirect(url);
+  const state = issueOAuthState();
+  const url = new URL(getGoogleAuthUrl());
+  url.searchParams.set('state', state);
+  res.setHeader?.('Set-Cookie', `fleetly_oauth_state=${encodeURIComponent(state)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+  res.redirect(url.toString());
 };
 
 /**
@@ -160,8 +193,11 @@ const redirectToGoogle = (req, res) => {
  * GET /api/auth/facebook
  */
 const redirectToFacebook = (req, res) => {
-  const url = getFacebookAuthUrl();
-  res.redirect(url);
+  const state = issueOAuthState();
+  const url = new URL(getFacebookAuthUrl());
+  url.searchParams.set('state', state);
+  res.setHeader?.('Set-Cookie', `fleetly_oauth_state=${encodeURIComponent(state)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=600${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+  res.redirect(url.toString());
 };
 
 module.exports = {

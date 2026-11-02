@@ -124,6 +124,11 @@ const createBookingAtomic = async ({
     session = await mongoose.startSession();
     let booking;
     await session.withTransaction(async () => {
+      // Both concurrent transactions write this vehicle document, so MongoDB
+      // aborts one of them with a write conflict and withTransaction replays it,
+      // this time seeing the other booking. Reading alone is not enough under
+      // snapshot isolation (both would see the window as free).
+      await Vehicle.updateOne({ _id: vehicle._id }, { $inc: { bookingVersion: 1 } }, { session });
       if (await findConflict(vehicleId, dates, null, session)) {
         const err = new Error('Vehicle is already booked for these dates');
         err.statusCode = 409;

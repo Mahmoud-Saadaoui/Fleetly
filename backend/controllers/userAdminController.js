@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const User = require('../models/user');
 const Branch = require('../models/branch');
 const bcrypt = require('bcryptjs');
-const jwtHelpers = require('../utils/jwtHelpers');
 const { escapeRegex } = require('../utils/search');
 const { asyncHandler } = require('../middlewares/asyncHandler');
 const {
@@ -197,11 +196,24 @@ const inviteUser = asyncHandler(async (req, res) => {
     isActive: true
   });
 
-  // Generate invitation token (valid 7 days)
-  const inviteToken = jwtHelpers.sign({ sub: user._id }, '7d');
+  // The raw token is handed to the configured mail/webhook adapter in the
+  // deployment layer. Only its hash is persisted, so a database leak cannot
+  // be used to activate an account.
+  const inviteToken = crypto.randomBytes(32).toString('hex');
+  user.invitationTokenHash = crypto.createHash('sha256').update(inviteToken).digest('hex');
+  user.invitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  user.isActive = false;
+  if (typeof user.save === 'function') await user.save();
 
-  // TODO: Send invitation email with link
-  // await sendInviteEmail(email, inviteToken);
+  // An email adapter can consume this event without exposing the token in the
+  // API response. Until configured, the invitation remains safely unusable.
+  if (process.env.INVITATION_WEBHOOK_URL) {
+    const axios = require('axios');
+    await axios.post(process.env.INVITATION_WEBHOOK_URL, {
+      email, name, role, token: inviteToken,
+      expiresAt: user.invitationExpiresAt.toISOString()
+    }, { timeout: 5000 });
+  }
 
   return createdResponse(res, {
     id: user._id,

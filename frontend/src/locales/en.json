@@ -25,7 +25,8 @@
       "pickupPlaceholder": "City or airport",
       "startDate": "Start Date",
       "endDate": "End Date",
-      "search": "Search"
+      "search": "Search",
+      "invalidDates": "Please select a valid future date range."
     },
     "experience": {
       "title": "Feel the",
@@ -145,7 +146,8 @@
     "bookNow": "Book now",
     "previous": "Previous",
     "next": "Next",
-    "page": "Page {{page}} / {{pages}}"
+    "page": "Page {{page}} / {{pages}}",
+    "unavailableForDates": "Unavailable for selected dates"
   },
   "vehicleDetail": {
     "notFound": "Vehicle not found",
@@ -198,7 +200,8 @@
     "quoteFirst": "Please get a quote first",
     "bookingSuccess": "Booking created successfully",
     "bookingError": "Error while booking",
-    "back": "Back to the fleet"
+    "back": "Back to the fleet",
+    "quoteExpired": "Your quote expired. Please retry."
   },
   "bookings": {
     "title": "My",
@@ -220,7 +223,23 @@
       "completed": "Completed",
       "cancelled": "Cancelled",
       "no_show": "No-show"
-    }
+    },
+    "back": "Back",
+    "backToList": "Back to my bookings",
+    "cancel": "Cancel booking",
+    "cancelError": "Could not cancel the booking.",
+    "cancellationReason": "Cancellation reason",
+    "cancelled": "Booking cancelled.",
+    "cancelReasonPrompt": "Cancellation reason (optional)",
+    "detailSubtitle": "Your booking details",
+    "detailTitle": "Booking",
+    "loadError": "Could not load the booking.",
+    "notes": "Notes",
+    "notFound": "Booking not found.",
+    "paymentStatus": "Payment",
+    "pickupBranch": "Pickup branch",
+    "reference": "Reference",
+    "returnBranch": "Return branch"
   },
   "footer": {
     "copyright": "© {{year}} Fleetly",
@@ -228,7 +247,12 @@
   },
   "common": {
     "goHome": "Go to home",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "retry": "Retry",
+    "back": "Back",
+    "backHome": "Back to home",
+    "close": "Close",
+    "menu": "Menu"
   },
   "error": {
     "title": "Something went wrong",
@@ -285,7 +309,12 @@
       "amount": "Amount",
       "email": "Email",
       "role": "Role",
-      "city": "City"
+      "city": "City",
+      "allBranches": "All branches",
+      "allStatus": "All statuses",
+      "allVehicles": "All vehicles",
+      "noResults": "No results",
+      "search": "Search"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -365,7 +394,8 @@
       "subtitle": "Confirmed and ongoing bookings",
       "details": "Booking details",
       "start": "Start",
-      "end": "End"
+      "end": "End",
+      "empty": "No bookings in this period"
     },
     "analytics": {
       "title": "Analytics",

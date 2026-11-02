@@ -16,26 +16,34 @@ const accessLogStream = process.env.NODE_ENV === 'production'
 
 // Morgan tokens
 morgan.token('user-id', (req) => req.userId || 'anonymous');
-morgan.token('request-id', (req) => req.id || 'N/A');
+morgan.token('request-id', (req) => req.id || req.requestId || 'N/A');
+morgan.token('route', (req) => req.route?.path || req.baseUrl + req.path || req.originalUrl);
 
 // Define custom format for Morgan
-const morganFormat = ':request-id | :date[iso] | :method :url | :status | :response-time ms | :user-id | :remote-addr';
+const morganFormat = JSON.stringify({
+  requestId: ':request-id',
+  time: ':date[iso]',
+  method: ':method',
+  route: ':route',
+  url: ':url',
+  status: ':status',
+  durationMs: ':response-time',
+  userId: ':user-id',
+  ip: ':remote-addr'
+});
 
 // Middleware for HTTP request logging
 const httpLogger = morgan(morganFormat, {
   stream: accessLogStream,
-  skip: (req, res) => {
-    // Skip logging for health checks in production
-    return process.env.NODE_ENV === 'production' && req.path.startsWith('/health');
+  skip: (req) => {
+    // Skip logging for health checks in production to reduce noise
+    return process.env.NODE_ENV === 'production' && (req.path.startsWith('/health') || req.path.startsWith('/api/health'));
   }
 });
 
 // Also log to console in development
 if (process.env.NODE_ENV !== 'production') {
-  morgan.token('user-id', (req) => req.userId || 'anonymous');
-  morgan.token('request-id', (req) => req.id || 'N/A');
-
-  const consoleFormat = '[:date[iso]] :method :url :status :response-time ms';
+  const consoleFormat = '[:date[iso]] :request-id :method :url :status :response-time ms :user-id';
   const consoleLogger = morgan(consoleFormat);
 
   // Combine both loggers

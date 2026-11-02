@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { vehiclesAPI, branchesAPI } from "../../api/endpoints";
@@ -17,6 +17,7 @@ const VehiclesForm = () => {
   const navigate = useNavigate();
   const isEdit = id && id !== "new";
   const [loading, setLoading] = useState(isEdit);
+  const [loadError, setLoadError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({
@@ -37,21 +38,16 @@ const VehiclesForm = () => {
     images: [],
   });
 
-  useEffect(() => {
-    fetchBranches();
-    if (isEdit) fetchVehicle();
-  }, [id]);
-
-  const fetchBranches = async () => {
+  const fetchBranches = useCallback(async () => {
     try {
       const res = await branchesAPI.getAll({ limit: 100 });
       if (res.data.success) setBranches(res.data.data);
     } catch (err) {
-      console.error(err);
+      toast.error(getApiErrorMessage(err, t("admin.common.error")));
     }
-  };
+  }, [t]);
 
-  const fetchVehicle = async () => {
+  const fetchVehicle = useCallback(async () => {
     try {
       const res = await vehiclesAPI.getById(id);
       if (res.data.success) {
@@ -67,13 +63,17 @@ const VehiclesForm = () => {
           });
         }
       }
-    } catch {
-      toast.error(t("admin.common.error"));
-      navigate("/admin/vehicles");
+    } catch (err) {
+      setLoadError(getApiErrorMessage(err, t("admin.common.error")));
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, t]);
+
+  useEffect(() => {
+    fetchBranches();
+    if (isEdit) fetchVehicle();
+  }, [id, isEdit, fetchBranches, fetchVehicle]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -132,6 +132,18 @@ const VehiclesForm = () => {
     return (
       <div className="flex justify-center py-16">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="text-center py-16 text-red-400">
+        <p className="mb-3">{loadError}</p>
+        <div className="flex justify-center gap-3">
+          <button type="button" onClick={() => { setLoadError(""); setLoading(true); fetchVehicle(); }} className="px-4 py-2 border border-white/20 rounded-lg text-white">{t("common.retry")}</button>
+          <button type="button" onClick={() => navigate("/admin/vehicles")} className="px-4 py-2 border border-white/20 rounded-lg text-white">{t("admin.actions.cancel")}</button>
+        </div>
       </div>
     );
   }

@@ -6,13 +6,13 @@ const {
   livenessCheck
 } = require('../controllers/healthController');
 
-// Health check endpoint
-router.get('/', healthCheck);
+// Liveness probe (for Kubernetes/Docker) - process alive
+router.get('/live', livenessCheck);
 
-// Readiness probe (for Kubernetes/Docker)
+// Readiness probe (for Kubernetes/Docker) - ready to accept traffic (depends on MongoDB)
 router.get('/ready', readinessCheck);
 
-// Liveness probe (for Kubernetes/Docker)
-router.get('/live', livenessCheck);
+// Health check endpoint (combined)
+router.get('/', healthCheck);
 
 module.exports = router;

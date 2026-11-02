@@ -17,7 +17,7 @@ const {
 router.get('/', getBranches);
 router.get('/:id', getBranchById);
 
-// Admin/fleet_manager routes
+// Admin/agency_manager routes
 router.post(
   '/',
   auth.check,

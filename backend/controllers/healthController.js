@@ -2,63 +2,65 @@ const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 
 /**
- * Health check endpoint
- * Returns the status of the API and its dependencies
+ * Liveness probe - checks if the process is alive (no external dependencies)
  */
-exports.healthCheck = async (req, res) => {
-  const healthcheck = {
-    uptime: process.uptime(),
-    message: 'OK',
-    timestamp: Date.now(),
-    checks: {
-      database: {
-        status: 'unknown',
-        responseTime: null
-      },
-      api: {
-        status: 'up'
-      }
-    }
-  };
+exports.livenessCheck = (req, res) => {
+  return res.status(200).json({
+    status: 'alive'
+  });
+};
 
+/**
+ * Readiness probe - checks if the service is ready to accept traffic (depends on MongoDB)
+ */
+exports.readinessCheck = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-      throw new Error('MongoDB connection is not ready');
+      return res.status(503).json({
+        status: 'not ready'
+      });
     }
 
-    // Check database connection
-    const dbStart = Date.now();
-    await mongoose.connection.db.admin().ping();
-    healthcheck.checks.database.responseTime = Date.now() - dbStart;
-    healthcheck.checks.database.status = 'up';
+    // Ping database with timeout
+    await Promise.race([
+      mongoose.connection.db.admin().ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+    ]);
 
-    return res.status(200).json(healthcheck);
+    return res.status(200).json({
+      status: 'ready'
+    });
   } catch (error) {
-    logger.error('Database health check failed', { message: error.message });
-    healthcheck.checks.database.status = 'down';
-    healthcheck.message = 'Degraded';
-    return res.status(503).json(healthcheck);
+    logger.warn('Readiness check failed', { requestId: req.id });
+    return res.status(503).json({
+      status: 'not ready'
+    });
   }
 };
 
 /**
- * Simple readiness probe
+ * Health check endpoint (legacy/combined)
  */
-exports.readinessCheck = (req, res) => {
-  const isReady = mongoose.connection.readyState === 1;
+exports.healthCheck = async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        status: 'unhealthy'
+      });
+    }
 
-  return res.status(isReady ? 200 : 503).json({
-    status: isReady ? 'ready' : 'not ready',
-    database: isReady ? 'connected' : 'disconnected'
-  });
-};
+    await Promise.race([
+      mongoose.connection.db.admin().ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+    ]);
 
-/**
- * Simple liveness probe
- */
-exports.livenessCheck = (req, res) => {
-  return res.status(200).json({
-    status: 'alive',
-    uptime: process.uptime()
-  });
+    return res.status(200).json({
+      status: 'healthy'
+    });
+  } catch (error) {
+    logger.warn('Health check failed', { requestId: req.id });
+    return res.status(503).json({
+      status: 'unhealthy'
+    });
+  }
 };

@@ -25,7 +25,8 @@
       "pickupPlaceholder": "Ville ou aéroport",
       "startDate": "Date de début",
       "endDate": "Date de fin",
-      "search": "Rechercher"
+      "search": "Rechercher",
+      "invalidDates": "Veuillez choisir une plage de dates valide dans le futur."
     },
     "experience": {
       "title": "Ressentez la",
@@ -145,7 +146,8 @@
     "bookNow": "Réserver",
     "previous": "Précédent",
     "next": "Suivant",
-    "page": "Page {{page}} / {{pages}}"
+    "page": "Page {{page}} / {{pages}}",
+    "unavailableForDates": "Indisponible pour les dates choisies"
   },
   "vehicleDetail": {
     "notFound": "Véhicule non trouvé",
@@ -198,7 +200,8 @@
     "quoteFirst": "Veuillez d'abord obtenir un devis",
     "bookingSuccess": "Réservation créée avec succès",
     "bookingError": "Erreur lors de la réservation",
-    "back": "Retour à la flotte"
+    "back": "Retour à la flotte",
+    "quoteExpired": "Votre devis a expiré. Veuillez réessayer."
   },
   "bookings": {
     "title": "Mes",
@@ -220,7 +223,23 @@
       "completed": "Terminée",
       "cancelled": "Annulée",
       "no_show": "No-show"
-    }
+    },
+    "back": "Retour",
+    "backToList": "Retour à mes réservations",
+    "cancel": "Annuler la réservation",
+    "cancelError": "Impossible d'annuler la réservation.",
+    "cancellationReason": "Motif d'annulation",
+    "cancelled": "Réservation annulée.",
+    "cancelReasonPrompt": "Motif d'annulation (facultatif)",
+    "detailSubtitle": "Détails de votre réservation",
+    "detailTitle": "Réservation",
+    "loadError": "Impossible de charger la réservation.",
+    "notes": "Notes",
+    "notFound": "Réservation introuvable.",
+    "paymentStatus": "Paiement",
+    "pickupBranch": "Agence de départ",
+    "reference": "Référence",
+    "returnBranch": "Agence de retour"
   },
   "footer": {
     "copyright": "© {{year}} Fleetly",
@@ -228,7 +247,12 @@
   },
   "common": {
     "goHome": "Retour à l'accueil",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "backHome": "Retour à l'accueil",
+    "close": "Fermer",
+    "menu": "Menu"
   },
   "error": {
     "title": "Une erreur est survenue",
@@ -285,7 +309,12 @@
       "amount": "Montant",
       "email": "Email",
       "role": "Rôle",
-      "city": "Ville"
+      "city": "Ville",
+      "allBranches": "Toutes les agences",
+      "allStatus": "Tous les statuts",
+      "allVehicles": "Tous les véhicules",
+      "noResults": "Aucun résultat",
+      "search": "Rechercher"
     },
     "dashboard": {
       "title": "Tableau de bord",
@@ -365,7 +394,8 @@
       "subtitle": "Réservations confirmées et en cours",
       "details": "Détails réservation",
       "start": "Début",
-      "end": "Fin"
+      "end": "Fin",
+      "empty": "Aucune réservation sur cette période"
     },
     "analytics": {
       "title": "Analytique",

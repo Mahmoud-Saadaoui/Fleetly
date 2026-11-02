@@ -43,6 +43,7 @@ const VehicleSchema = new mongoose.Schema(
       required: true,
     },
     mileage: { type: Number, default: 0, min: 0 },
+    bookingVersion: { type: Number, default: 0, min: 0 },
     images: [{ type: String, trim: true }],
     status: {
       type: String,

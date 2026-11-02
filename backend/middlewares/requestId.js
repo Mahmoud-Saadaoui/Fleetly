@@ -5,10 +5,12 @@ const crypto = require('crypto');
  * Helps with tracing requests through logs
  */
 exports.requestId = (req, res, next) => {
-  const incomingRequestId = req.get('x-request-id');
-  req.id = incomingRequestId && /^[a-zA-Z0-9._:-]{1,100}$/.test(incomingRequestId)
+  const incomingRequestId = req.get('x-request-id') || req.get('x-correlation-id');
+  const requestId = incomingRequestId && /^[a-zA-Z0-9._:-]{1,100}$/.test(incomingRequestId)
     ? incomingRequestId
     : crypto.randomUUID();
-  res.setHeader('X-Request-ID', req.id);
+  req.id = requestId;
+  req.requestId = requestId;
+  res.setHeader('X-Request-ID', requestId);
   next();
 };

@@ -37,7 +37,9 @@ const UserSchema = new mongoose.Schema({
   },
   branchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }],
   googleId: { type: String, sparse: true, unique: true },
-  facebookId: { type: String, sparse: true, unique: true }
+  facebookId: { type: String, sparse: true, unique: true },
+  invitationTokenHash: { type: String, select: false, index: true },
+  invitationExpiresAt: { type: Date, select: false }
 }, {
 	timestamps: true
 })

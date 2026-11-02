@@ -40,7 +40,20 @@ const loginValidation = [
   validate
 ];
 
+const invitationValidation = [
+  body('token')
+    .isHexadecimal().withMessage('Invitation token is invalid')
+    .isLength({ min: 64, max: 64 }).withMessage('Invitation token is invalid'),
+  body('password')
+    .notEmpty().withMessage('Password is required')
+    .isLength({ min: 6, max: 50 }).withMessage('Password must be between 6 and 50 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+  validate
+];
+
 module.exports = {
   registerValidation,
-  loginValidation
+  loginValidation,
+  invitationValidation
 };

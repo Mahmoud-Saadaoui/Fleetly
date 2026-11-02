@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import { usersAdminAPI } from "../../api/endpoints";
@@ -17,6 +17,7 @@ const UsersList = () => {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,13 +30,9 @@ const UsersList = () => {
     return () => clearTimeout(timer);
   }, [searchInput, appliedSearch, pagination.page]);
 
-  useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, appliedSearch, pagination.limit]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const params = {
         page: pagination.page,
@@ -47,12 +44,16 @@ const UsersList = () => {
         setUsers(res.data.data);
         setPagination(res.data.pagination);
       }
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, t("admin.common.error")));
+    } catch (err) {
+      setError(getApiErrorMessage(err, t("admin.common.error")));
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit, appliedSearch, t]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const openEdit = (user) => {
     if (currentUser && user._id === currentUser._id) {
@@ -101,6 +102,15 @@ const UsersList = () => {
     return (
       <div className="flex justify-center py-16">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16 text-red-400">
+        <p className="mb-3">{error}</p>
+        <button type="button" onClick={fetchUsers} className="px-4 py-2 border border-white/20 rounded-lg">{t("common.retry")}</button>
       </div>
     );
   }
@@ -159,12 +169,14 @@ const UsersList = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => openEdit(u)}
+                        disabled={saving}
                         className="px-3 py-1 text-xs bg-dark border border-white/10 rounded hover:border-accent transition-colors"
                       >
                         {t("admin.actions.edit")}
                       </button>
                       <button
                         onClick={() => handleDelete(u)}
+                        disabled={saving}
                         className="px-3 py-1 text-xs bg-dark border border-red-500/40 text-red-400 rounded hover:border-red-500 transition-colors"
                       >
                         {t("admin.actions.delete")}

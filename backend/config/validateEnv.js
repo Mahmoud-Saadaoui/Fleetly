@@ -40,14 +40,61 @@ const validateEnv = () => {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    if (!process.env.CLIENT_ALLOWED_ORIGINS?.trim() && !process.env.CLIENT_PRODUCTION_DOMAIN?.trim()) {
-      throw new Error('CLIENT_ALLOWED_ORIGINS or CLIENT_PRODUCTION_DOMAIN is required in production');
+    if (!process.env.CLIENT_PRODUCTION_DOMAIN?.trim()) {
+      throw new Error('CLIENT_PRODUCTION_DOMAIN is required in production');
+    }
+    if (!process.env.CLIENT_ALLOWED_ORIGINS?.trim()) {
+      throw new Error('CLIENT_ALLOWED_ORIGINS is required in production');
+    }
+    try {
+      const prodOrigin = new URL(process.env.CLIENT_PRODUCTION_DOMAIN);
+      if (prodOrigin.protocol !== 'https:') {
+        throw new Error('CLIENT_PRODUCTION_DOMAIN must use HTTPS in production');
+      }
+    } catch (err) {
+      if (err.message.includes('HTTPS')) throw err;
+      throw new Error('CLIENT_PRODUCTION_DOMAIN must be a valid HTTPS URL in production');
+    }
+    const allowed = process.env.CLIENT_ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+    if (allowed.length === 0) {
+      throw new Error('CLIENT_ALLOWED_ORIGINS is required in production');
+    }
+    for (const origin of allowed) {
+      try {
+        const url = new URL(origin);
+        if (url.protocol !== 'https:') {
+          throw new Error(`CLIENT_ALLOWED_ORIGINS must use HTTPS in production: ${origin}`);
+        }
+      } catch (err) {
+        if (err.message.includes('HTTPS')) throw err;
+        throw new Error(`CLIENT_ALLOWED_ORIGINS contains invalid URL: ${origin}`);
+      }
     }
     if (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_SECRET) {
+      if (!process.env.GOOGLE_CLIENT_ID?.trim() || !process.env.GOOGLE_CLIENT_SECRET?.trim()) {
+        throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set when Google OAuth is configured');
+      }
       if (!process.env.GOOGLE_CALLBACK_URL?.trim()) throw new Error('GOOGLE_CALLBACK_URL is required in production when Google OAuth is configured');
+      try {
+        const cb = new URL(process.env.GOOGLE_CALLBACK_URL);
+        if (cb.protocol !== 'https:') throw new Error('GOOGLE_CALLBACK_URL must use HTTPS in production');
+      } catch (err) {
+        if (err.message.includes('HTTPS')) throw err;
+        throw new Error('GOOGLE_CALLBACK_URL must be a valid HTTPS URL in production');
+      }
     }
     if (process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_APP_SECRET) {
+      if (!process.env.FACEBOOK_APP_ID?.trim() || !process.env.FACEBOOK_APP_SECRET?.trim()) {
+        throw new Error('FACEBOOK_APP_ID and FACEBOOK_APP_SECRET must both be set when Facebook OAuth is configured');
+      }
       if (!process.env.FACEBOOK_CALLBACK_URL?.trim()) throw new Error('FACEBOOK_CALLBACK_URL is required in production when Facebook OAuth is configured');
+      try {
+        const cb = new URL(process.env.FACEBOOK_CALLBACK_URL);
+        if (cb.protocol !== 'https:') throw new Error('FACEBOOK_CALLBACK_URL must use HTTPS in production');
+      } catch (err) {
+        if (err.message.includes('HTTPS')) throw err;
+        throw new Error('FACEBOOK_CALLBACK_URL must be a valid HTTPS URL in production');
+      }
     }
   }
 

@@ -19,12 +19,14 @@ const BookingsPage = () => {
   const { t } = useTranslation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [filter, setFilter] = useState("all");
   const [cancellingId, setCancellingId] = useState(null);
 
   const fetchBookings = async (page = pagination.page) => {
     setLoading(true);
+    setError("");
     try {
       const params = { page, limit: pagination.limit };
       if (filter !== "all") params.status = filter;
@@ -34,7 +36,7 @@ const BookingsPage = () => {
         setPagination(res.data.pagination);
       }
     } catch (err) {
-      console.error(err);
+      setError(getApiErrorMessage(err, t("bookings.loadError") || t("admin.common.error")));
     } finally {
       setLoading(false);
     }
@@ -101,13 +103,19 @@ const BookingsPage = () => {
           ))}
         </div>
 
+        {error && (
+          <div className="mb-6 text-center text-red-400">
+            <p className="mb-3">{error}</p>
+            <button onClick={() => fetchBookings(pagination.page)} className="px-4 py-2 border border-white/20 rounded-lg">{t("common.retry") || "Retry"}</button>
+          </div>
+        )}
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
           </div>
-        ) : filteredBookings.length === 0 ? (
+        ) : !error && filteredBookings.length === 0 ? (
           <div className="text-center py-16 text-gray-400">{t("bookings.none")}</div>
-        ) : (
+        ) : !error && (
           <div className="space-y-4">
             {filteredBookings.map((booking) => (
               <Link
@@ -160,7 +168,7 @@ const BookingsPage = () => {
           </div>
         )}
 
-        {pagination.pages > 1 && (
+        {!error && pagination.pages > 1 && (
           <div className="flex justify-center items-center gap-4 mt-12">
             <button
               onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}

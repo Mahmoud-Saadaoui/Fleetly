@@ -53,3 +53,6 @@ app.use(notFound);
 app.use(errorHandler);
 
 module.exports = app;
+
+// Separate readiness route as per T050
+app.use('/ready', require('./routes/readinessRoute'));

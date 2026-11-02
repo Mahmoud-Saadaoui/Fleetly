@@ -386,10 +386,10 @@ const HomePage = () => {
             <div>
               <h4 className="font-semibold mb-4">{t("home.footer.quickLinks")}</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">{t("home.footer.legalNotice")}</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">{t("home.footer.privacyPolicy")}</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">{t("home.footer.faq")}</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">{t("home.footer.termsConditions")}</a></li>
+                <li><Link to="/legal?section=legal" className="hover:text-white transition-colors">{t("home.footer.legalNotice")}</Link></li>
+                <li><Link to="/legal?section=privacy" className="hover:text-white transition-colors">{t("home.footer.privacyPolicy")}</Link></li>
+                <li><Link to="/legal?section=faq" className="hover:text-white transition-colors">{t("home.footer.faq")}</Link></li>
+                <li><Link to="/legal?section=terms" className="hover:text-white transition-colors">{t("home.footer.termsConditions")}</Link></li>
               </ul>
             </div>
             <div>
@@ -398,7 +398,10 @@ const HomePage = () => {
                 {["Instagram", "LinkedIn", "Facebook"].map((social) => (
                   <a
                     key={social}
-                    href="#"
+                    href={social === "Instagram" ? "https://www.instagram.com/" : social === "LinkedIn" ? "https://www.linkedin.com/" : "https://www.facebook.com/"}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={social}
                     className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/40 transition-colors"
                   >
                     <span className="text-xs">{social[0]}</span>
@@ -417,7 +420,7 @@ const HomePage = () => {
                   placeholder={t("home.footer.emailPlaceholder")}
                   className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-s-lg text-sm focus:outline-none focus:border-accent"
                 />
-                <button className="px-4 py-2 bg-accent text-dark rounded-e-lg hover:bg-accent-light transition-colors">
+                <button type="button" className="px-4 py-2 bg-accent text-dark rounded-e-lg hover:bg-accent-light transition-colors">
                   {t("home.footer.ok")}
                 </button>
               </div>

@@ -13,6 +13,7 @@ const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const VehiclesPage = lazy(() => import("./pages/public/VehiclesPage"));
 const VehicleDetailPage = lazy(() => import("./pages/public/VehicleDetailPage"));
+const LegalPage = lazy(() => import("./pages/public/LegalPage"));
 const BookingsPage = lazy(() => import("./pages/user/BookingsPage"));
 const BookingDetailPage = lazy(() => import("./pages/user/BookingDetailPage"));
 const DashboardHome = lazy(() => import("./pages/admin/DashboardHome"));
@@ -47,6 +48,10 @@ const App = () => {
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/vehicles" element={<VehiclesPage />} />
           <Route path="/vehicles/:id" element={<VehicleDetailPage />} />
+          <Route path="/legal" element={<LegalPage />} />
+          <Route path="/about" element={<LegalPage />} />
+          <Route path="/contact" element={<LegalPage />} />
+          <Route path="/faq" element={<LegalPage />} />
           <Route
             path="/my-bookings"
             element={

@@ -7,20 +7,26 @@ import { getApiErrorMessage } from "../../utils/apiError";
 import toast from "react-hot-toast";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 
+const STATUSES = ["available", "reserved", "rented", "maintenance", "retired"];
+const CATEGORIES = ["Premium", "Sport", "Business", "Électrique", "SUV", "Citadine"];
+
 const VehiclesList = () => {
   const { t } = useTranslation();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchVehicles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page]);
 
   const fetchVehicles = async () => {
     setLoading(true);
     try {
-      const res = await vehiclesAPI.getAll({ page: pagination.page, limit: pagination.limit });
+      const params = { page: pagination.page, limit: pagination.limit };
+      const res = await vehiclesAPI.getAll(params);
       if (res.data.success) {
         setVehicles(res.data.data);
         setPagination(res.data.pagination);
@@ -34,16 +40,19 @@ const VehiclesList = () => {
 
   const handleDelete = async (id) => {
     if (!confirm(t("admin.vehicles.deleteConfirm"))) return;
+    setDeletingId(id);
     try {
       await vehiclesAPI.delete(id);
       toast.success(t("admin.vehicles.deleted"));
       fetchVehicles();
     } catch (err) {
       toast.error(getApiErrorMessage(err, t("admin.common.error")));
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  if (loading) {
+  if (loading && vehicles.length === 0) {
     return (
       <div className="flex justify-center py-16">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
@@ -80,7 +89,11 @@ const VehiclesList = () => {
               </tr>
             </thead>
             <tbody>
-              {vehicles.map((v) => (
+              {vehicles.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-6 text-center text-gray-400">{t("admin.common.noResults")}</td>
+                </tr>
+              ) : vehicles.map((v) => (
                 <tr key={v._id} className="border-b border-white/5 hover:bg-white/5">
                   <td className="p-4">
                     <div className="font-medium">{v.make} {v.model}</div>
@@ -101,7 +114,7 @@ const VehiclesList = () => {
                       <Link to={`/admin/vehicles/${v._id}/edit`} className="p-2 text-gray-400 hover:text-white">
                         <FaEdit />
                       </Link>
-                      <button onClick={() => handleDelete(v._id)} className="p-2 text-gray-400 hover:text-red-400">
+                      <button onClick={() => handleDelete(v._id)} disabled={deletingId === v._id} className="p-2 text-gray-400 hover:text-red-400 disabled:opacity-50">
                         <FaTrash />
                       </button>
                     </div>

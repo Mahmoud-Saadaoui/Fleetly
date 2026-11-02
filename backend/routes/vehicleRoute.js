@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
-const validate = require('../middlewares/validate');
+const { validate } = require('../middlewares/validate');
 const vehicleRules = require('../validators/vehicleValidator');
 const { getVehicles, getVehicleById, getVehicleAvailability, createVehicle, updateVehicleStatus } = require('../controllers/vehicleController');
 

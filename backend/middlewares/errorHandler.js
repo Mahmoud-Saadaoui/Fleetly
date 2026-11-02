@@ -8,22 +8,26 @@ const {
 exports.notFound = (req, res) => {
   logger.warn('404 - Route not found', {
     path: req.originalUrl,
+    route: req.route?.path,
     method: req.method,
     ip: req.ip,
-    requestId: req.id
+    requestId: req.id || req.requestId
   });
 
   return errorResponse(res, 'Route not found', 404);
 };
 
 exports.errorHandler = (err, req, res, next) => {
+  const statusCode = err.statusCode || err.status || 500;
   logger.error('Request error', {
     message: err.message,
-    stack: err.stack,
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
     path: req.originalUrl,
+    route: req.route?.path,
     method: req.method,
     ip: req.ip,
-    requestId: req.id
+    statusCode,
+    requestId: req.id || req.requestId
   });
 
   if (err.type === 'entity.too.large') {
@@ -69,11 +73,11 @@ exports.errorHandler = (err, req, res, next) => {
   if (err.isOperational) {
     return errorResponse(res, err.message, err.statusCode || 500, {
       code: err.code || undefined,
-      requestId: req.id
+      requestId: req.id || req.requestId
     });
   }
 
   return errorResponse(res, 'Internal server error', 500, {
-    requestId: req.id
+    requestId: req.id || req.requestId
   });
 };
